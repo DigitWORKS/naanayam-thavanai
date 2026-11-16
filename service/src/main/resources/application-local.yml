@@ -1,0 +1,8 @@
+# Local development only. Run with SPRING_PROFILES_ACTIVE=local
+app:
+  jwt:
+    secret: ${JWT_SECRET:local-dev-secret-change-me-0123456789abcdef}
+
+logging:
+  level:
+    tn.digitworks.naanayamthavanai: DEBUG

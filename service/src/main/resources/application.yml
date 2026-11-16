@@ -1,0 +1,53 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /v1
+
+spring:
+  application:
+    name: naanayam-service
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/naanayam?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Kolkata}
+    username: ${DB_USER:naanayam}
+    password: ${DB_PASSWORD:naanayam}
+  flyway:
+    locations: classpath:db/migration
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Kolkata
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+app:
+  jwt:
+    # Required, at least 32 characters. Never commit a real value.
+    secret: ${JWT_SECRET}
+    access-ttl: PT12H
+    refresh-ttl: P30D
+  bootstrap:
+    super-admin:
+      # Creates the first Super Admin on startup if none exists
+      phone: ${SUPER_ADMIN_PHONE:}
+      pin: ${SUPER_ADMIN_PIN:}
+  storage:
+    local-dir: ${DOCUMENT_DIR:./data/documents}
+  registration:
+    # Public self-registration limit per client IP (in memory, single server)
+    max-per-hour-per-ip: 5
+  jobs:
+    missed-installments:
+      enabled: true
+      cron: "0 15 0 * * *"   # 00:15 IST daily
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

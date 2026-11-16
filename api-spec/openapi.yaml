@@ -1,0 +1,1541 @@
+openapi: 3.0.3
+info:
+  title: Naanayam Thavanai API
+  version: 1.0.0
+  description: |
+    Multi-tenant lending and collection API (DigitWorks).
+    - tenant_id is always taken from the JWT, never from path, query or body.
+    - Money values are decimal strings (e.g. "1250.00") to avoid floating-point errors.
+    - Dates are ISO-8601; business timezone is Asia/Kolkata.
+servers:
+  - url: https://api.naanayamthavanai.in/v1
+  - url: http://localhost:8080/v1
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+  - name: Admin
+    description: Super Admin only - tenant management
+  - name: Settings
+  - name: Users
+  - name: Areas
+  - name: Clients
+  - name: Loans
+  - name: Collections
+  - name: Payments
+  - name: Preclosure
+  - name: CashHandover
+  - name: Reports
+
+paths:
+  # ------------------------------------------------------------------ Auth
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with phone + PIN
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Tokens issued
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Self-registration of a financier (public)
+      description: |
+        Creates the financier on a 30-day free trial, its OWNER login and default settings, and signs the
+        owner in. Rate-limited per client IP (default 5 per hour). Mobile OTP verification is planned.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Registered and signed in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '400':
+          description: VALIDATION_FAILED (e.g. acceptTerms not true)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: TENANT_EXISTS or PHONE_IN_USE
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429':
+          description: TOO_MANY_REQUESTS
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: New tokens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user profile and assigned areas
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+
+  # ----------------------------------------------------------------- Admin
+  /admin/tenants:
+    get:
+      tags: [Admin]
+      summary: List tenants
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/TenantStatus' }
+      responses:
+        '200':
+          description: Tenant page
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TenantPage' }
+    post:
+      tags: [Admin]
+      summary: Create tenant with its owner user and default settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TenantCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tenant' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /admin/tenants/{tenantId}:
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    get:
+      tags: [Admin]
+      summary: Get tenant
+      responses:
+        '200':
+          description: Tenant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tenant' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Admin]
+      summary: Update tenant status / plan expiry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TenantUpdate' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tenant' }
+
+  /admin/jobs/missed-installments:
+    post:
+      tags: [Admin]
+      summary: Run the nightly missed-installment job now (testing or after downtime)
+      parameters:
+        - name: date
+          in: query
+          description: Process as of this date (default today, IST; future dates use today)
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Run summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date: { type: string, format: date }
+                  loansChecked: { type: integer }
+                  loansChanged: { type: integer }
+                  failures: { type: integer }
+
+  # -------------------------------------------------------------- Settings
+  /settings:
+    get:
+      tags: [Settings]
+      summary: Get current tenant settings
+      responses:
+        '200':
+          description: Settings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TenantSettings' }
+    put:
+      tags: [Settings]
+      summary: Update tenant settings (Owner)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TenantSettings' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TenantSettings' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  # ----------------------------------------------------------------- Users
+  /users:
+    get:
+      tags: [Users]
+      summary: List users of the tenant
+      parameters:
+        - name: role
+          in: query
+          schema: { $ref: '#/components/schemas/Role' }
+      responses:
+        '200':
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/User' }
+    post:
+      tags: [Users]
+      summary: Create agent (Owner)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    patch:
+      tags: [Users]
+      summary: Update user (name, active flag, reset PIN)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserUpdate' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+
+  /users/{userId}/areas:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    put:
+      tags: [Users]
+      summary: Replace the agent's assigned areas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [areaIds]
+              properties:
+                areaIds:
+                  type: array
+                  items: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Updated user with areas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  # ----------------------------------------------------------------- Areas
+  /areas:
+    get:
+      tags: [Areas]
+      summary: List areas
+      parameters:
+        - name: active
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Areas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Area' }
+    post:
+      tags: [Areas]
+      summary: Create area
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AreaInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Area' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /areas/{areaId}:
+    parameters:
+      - name: areaId
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    patch:
+      tags: [Areas]
+      summary: Rename or activate/deactivate area
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AreaInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Area' }
+
+  # --------------------------------------------------------------- Clients
+  /clients:
+    get:
+      tags: [Clients]
+      summary: Search clients (agents see only their areas)
+      parameters:
+        - name: q
+          in: query
+          description: Name or phone
+          schema: { type: string }
+        - name: areaId
+          in: query
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Client page
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientPage' }
+    post:
+      tags: [Clients]
+      summary: Create client (consent required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClientCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Client' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /clients/{clientId}:
+    parameters:
+      - $ref: '#/components/parameters/ClientId'
+    get:
+      tags: [Clients]
+      summary: Get client with loan summary
+      responses:
+        '200':
+          description: Client
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Clients]
+      summary: Update client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClientUpdate' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Client' }
+
+  /clients/{clientId}/documents:
+    parameters:
+      - $ref: '#/components/parameters/ClientId'
+    get:
+      tags: [Clients]
+      summary: List client documents (short-lived signed URLs)
+      responses:
+        '200':
+          description: Documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ClientDocument' }
+    post:
+      tags: [Clients]
+      summary: Upload client document
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [docType, file]
+              properties:
+                docType: { $ref: '#/components/schemas/DocType' }
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Uploaded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientDocument' }
+
+  /clients/{clientId}/documents/{documentId}/file:
+    parameters:
+      - $ref: '#/components/parameters/ClientId'
+      - name: documentId
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    get:
+      tags: [Clients]
+      summary: Download a client document (authenticated, not cached)
+      responses:
+        '200':
+          description: File
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/png:
+              schema: { type: string, format: binary }
+            image/webp:
+              schema: { type: string, format: binary }
+            application/pdf:
+              schema: { type: string, format: binary }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ----------------------------------------------------------------- Loans
+  /loans:
+    get:
+      tags: [Loans]
+      summary: List loans
+      parameters:
+        - name: clientId
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/LoanStatus' }
+        - name: areaId
+          in: query
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Loan page
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoanPage' }
+    post:
+      tags: [Loans]
+      summary: Create loan and generate schedule (Owner)
+      description: |
+        Validates interest rate <= tenant cap, method is allowed,
+        and client active loans < max_active_loans_per_client.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoanCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Loan' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /loans/preview:
+    post:
+      tags: [Loans]
+      summary: Preview schedule and amounts without saving
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoanCreate' }
+      responses:
+        '200':
+          description: Preview
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoanPreview' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /loans/{loanId}:
+    parameters:
+      - $ref: '#/components/parameters/LoanId'
+    get:
+      tags: [Loans]
+      summary: Get loan with balances
+      responses:
+        '200':
+          description: Loan
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Loan' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /loans/{loanId}/installments:
+    parameters:
+      - $ref: '#/components/parameters/LoanId'
+    get:
+      tags: [Loans]
+      summary: Loan schedule
+      responses:
+        '200':
+          description: Installments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Installment' }
+
+  /loans/{loanId}/ledger:
+    parameters:
+      - $ref: '#/components/parameters/LoanId'
+    get:
+      tags: [Loans]
+      summary: Payments with allocations and running balance
+      responses:
+        '200':
+          description: Ledger
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LedgerEntry' }
+
+  /loans/{loanId}/default:
+    parameters:
+      - $ref: '#/components/parameters/LoanId'
+    post:
+      tags: [Loans]
+      summary: Mark loan as defaulted (Owner)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [legalNote]
+              properties:
+                legalNote: { type: string, maxLength: 1000 }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Loan' }
+
+  # ----------------------------------------------------------- Collections
+  /collections/due:
+    get:
+      tags: [Collections]
+      summary: Due list (today + overdue) for the caller's areas
+      parameters:
+        - name: date
+          in: query
+          description: Defaults to today (Asia/Kolkata)
+          schema: { type: string, format: date }
+        - name: areaId
+          in: query
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Due items grouped per loan
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DueItem' }
+
+  # -------------------------------------------------------------- Payments
+  /payments:
+    post:
+      tags: [Payments]
+      summary: Record a payment of any amount
+      description: |
+        Allocation: overdue (oldest first) -> today's due -> advance
+        (per tenant advance_allocation). Idempotent on clientTxnId.
+        UPI: upiRefNo (UTR) is required, 12 digits, and must not be on another
+        unreversed payment of the tenant.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PaymentCreate' }
+      responses:
+        '201':
+          description: Recorded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '200':
+          description: Already recorded (same clientTxnId) - returns existing
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '409':
+          description: DUPLICATE_UPI_REF (UTR already used) or CLIENT_TXN_REUSED
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /payments/sync:
+    post:
+      tags: [Payments]
+      summary: Bulk sync of offline payments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [payments]
+              properties:
+                payments:
+                  type: array
+                  maxItems: 500
+                  items: { $ref: '#/components/schemas/PaymentCreate' }
+      responses:
+        '200':
+          description: Per-item result
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SyncResult' }
+
+  /payments/{paymentId}/reverse:
+    parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    post:
+      tags: [Payments]
+      summary: Reverse a payment (Owner) - creates a REVERSAL entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, maxLength: 255 }
+      responses:
+        '201':
+          description: Reversal entry
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  # ------------------------------------------------------------ Preclosure
+  /loans/{loanId}/preclosure-quote:
+    parameters:
+      - $ref: '#/components/parameters/LoanId'
+    get:
+      tags: [Preclosure]
+      summary: Settlement amount as of a date
+      parameters:
+        - name: asOf
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Quote
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PreclosureQuote' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /loans/{loanId}/preclose:
+    parameters:
+      - $ref: '#/components/parameters/LoanId'
+    post:
+      tags: [Preclosure]
+      summary: Confirm pre-closure with settlement payment (Owner)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PreclosureConfirm' }
+      responses:
+        '201':
+          description: Loan pre-closed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PreclosureResult' }
+        '409':
+          description: QUOTE_OUTDATED (amount changed - fetch a new quote), DUPLICATE_UPI_REF or CLIENT_TXN_REUSED
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  # ---------------------------------------------------------- CashHandover
+  /cash-handovers:
+    get:
+      tags: [CashHandover]
+      summary: List handovers
+      parameters:
+        - name: agentId
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/HandoverStatus' }
+      responses:
+        '200':
+          description: Handovers
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CashHandover' }
+    post:
+      tags: [CashHandover]
+      summary: Agent submits day's cash (expectedAmount computed by server)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [handoverDate, handedAmount]
+              properties:
+                handoverDate: { type: string, format: date }
+                handedAmount: { $ref: '#/components/schemas/Money' }
+                remarks: { type: string, maxLength: 255 }
+      responses:
+        '201':
+          description: Submitted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CashHandover' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /cash-handovers/{handoverId}/confirm:
+    parameters:
+      - name: handoverId
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    post:
+      tags: [CashHandover]
+      summary: Owner confirms or disputes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [CONFIRMED, DISPUTED]
+                remarks: { type: string, maxLength: 255 }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CashHandover' }
+
+  # --------------------------------------------------------------- Reports
+  /reports/dashboard:
+    get:
+      tags: [Reports]
+      summary: Today's target vs collected, outstanding, overdue
+      parameters:
+        - name: date
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Dashboard
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Dashboard' }
+
+  /reports/collections:
+    get:
+      tags: [Reports]
+      summary: Collection summary by day, agent or area
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: groupBy
+          in: query
+          schema:
+            type: string
+            enum: [DAY, AGENT, AREA]
+            default: DAY
+      responses:
+        '200':
+          description: Rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CollectionReportRow' }
+
+  /reports/interest-income:
+    get:
+      tags: [Reports]
+      summary: Interest income for a financial year (Apr-Mar), for IT filing. Only JSON is implemented so far.
+      parameters:
+        - name: fy
+          in: query
+          required: true
+          description: Start year of FY, e.g. 2026 for FY 2026-27
+          schema: { type: integer }
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [JSON, XLSX, PDF]
+            default: JSON
+      responses:
+        '200':
+          description: Report
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InterestIncomeReport' }
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/pdf:
+              schema: { type: string, format: binary }
+
+# ======================================================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Claims include userId, tenantId (null for SUPER_ADMIN) and role
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+    Size:
+      name: size
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    ClientId:
+      name: clientId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    LoanId:
+      name: loanId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Not found (or belongs to another tenant)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Duplicate
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unprocessable:
+      description: Business rule violation
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    # ---------------------------------------------------------- common
+    Money:
+      type: string
+      pattern: '^-?\d{1,10}(\.\d{1,2})?$'
+      example: '1250.00'
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: INTEREST_ABOVE_CAP
+        message: { type: string }
+        details:
+          type: object
+          additionalProperties: true
+    PageMeta:
+      type: object
+      required: [page, size, totalElements, totalPages]
+      properties:
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer, format: int64 }
+        totalPages: { type: integer }
+
+    # ------------------------------------------------------------ enums
+    Role:
+      type: string
+      enum: [SUPER_ADMIN, OWNER, AGENT]
+    TenantStatus:
+      type: string
+      enum: [TRIAL, ACTIVE, SUSPENDED]
+    Plan:
+      type: string
+      enum: [TRIAL, MONTHLY, YEARLY]
+      description: |
+        Decides planExpiry. TRIAL = +30 days, MONTHLY = +1 month, YEARLY = +1 year. Starting or renewing a
+        plan adds the period to the current expiry if access is still running, otherwise to today.
+    InterestMethod:
+      type: string
+      enum: [FLAT, REDUCING]
+    InterestCollection:
+      type: string
+      enum: [UPFRONT_DEDUCTED, ADDED_TO_REPAYMENT]
+    Frequency:
+      type: string
+      enum: [DAILY, WEEKLY]
+    LoanStatus:
+      type: string
+      enum: [ACTIVE, CLOSED, PRECLOSED, DEFAULTED]
+    InstallmentStatus:
+      type: string
+      enum: [PENDING, PARTIAL, PAID, MISSED, SETTLED]
+    PaymentMode:
+      type: string
+      enum: [CASH, UPI]
+    DocType:
+      type: string
+      enum: [PHOTO, AADHAAR, PAN, GUARANTOR_ID, OTHER]
+    HandoverStatus:
+      type: string
+      enum: [PENDING, CONFIRMED, DISPUTED]
+
+    # ------------------------------------------------------------- auth
+    LoginRequest:
+      type: object
+      required: [phone, pin]
+      properties:
+        phone: { type: string, pattern: '^[6-9]\d{9}$' }
+        pin: { type: string, minLength: 4, maxLength: 6 }
+    TokenResponse:
+      type: object
+      required: [accessToken, refreshToken, expiresIn, user]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresIn: { type: integer, description: Seconds }
+        user: { $ref: '#/components/schemas/User' }
+    RegisterRequest:
+      type: object
+      required: [businessName, maxInterestRate, ownerName, phone, pin, acceptTerms]
+      properties:
+        businessName: { type: string, maxLength: 150 }
+        licenceNo: { type: string, maxLength: 50 }
+        maxInterestRate:
+          $ref: '#/components/schemas/Money'
+        ownerName: { type: string, maxLength: 100 }
+        phone:
+          type: string
+          pattern: '^[6-9]\d{9}$'
+          description: Becomes the owner's login
+        pin:
+          type: string
+          pattern: '^\d{4,6}$'
+          description: The app asks for it twice; send it once
+        plan:
+          allOf:
+            - $ref: '#/components/schemas/Plan'
+          description: Only TRIAL for now (default). MONTHLY/YEARLY return 422 PLAN_NEEDS_PAYMENT.
+        acceptTerms:
+          type: boolean
+          description: Must be true (terms of service + privacy policy)
+
+    # ----------------------------------------------------------- tenant
+    Tenant:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        ownerName: { type: string }
+        phone: { type: string }
+        licenceNo: { type: string, nullable: true }
+        status: { $ref: '#/components/schemas/TenantStatus' }
+        plan: { $ref: '#/components/schemas/Plan' }
+        planExpiry: { type: string, format: date, nullable: true }
+        termsAcceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when the owner self-registered
+        createdAt: { type: string, format: date-time }
+    TenantCreate:
+      type: object
+      required: [name, ownerName, phone, ownerPin, maxInterestRate]
+      properties:
+        name: { type: string, maxLength: 150 }
+        ownerName: { type: string, maxLength: 100 }
+        phone: { type: string, pattern: '^[6-9]\d{9}$' }
+        licenceNo: { type: string, maxLength: 50 }
+        ownerPin: { type: string, minLength: 4, maxLength: 6 }
+        maxInterestRate: { $ref: '#/components/schemas/Money' }
+        plan:
+          allOf:
+            - $ref: '#/components/schemas/Plan'
+          description: Default TRIAL. Any plan is allowed for Super Admin.
+        planExpiry:
+          type: string
+          format: date
+          description: Optional override of the date the plan gives
+    TenantUpdate:
+      type: object
+      properties:
+        status: { $ref: '#/components/schemas/TenantStatus' }
+        plan:
+          allOf:
+            - $ref: '#/components/schemas/Plan'
+          description: Starts or renews this plan from today (unused days are kept)
+        planExpiry:
+          type: string
+          format: date
+          description: Sets the date directly (applied after plan)
+        licenceNo: { type: string, maxLength: 50 }
+    TenantPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/Tenant' }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    TenantSettings:
+      type: object
+      required: [maxInterestRate, allowedInterestMethods, maxActiveLoansPerClient]
+      properties:
+        maxInterestRate: { $ref: '#/components/schemas/Money' }
+        allowedInterestMethods:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/InterestMethod' }
+        maxActiveLoansPerClient: { type: integer, minimum: 1 }
+        penaltyEnabled: { type: boolean }
+        penaltyType:
+          type: string
+          enum: [FIXED, PERCENT]
+          nullable: true
+        penaltyValue: { $ref: '#/components/schemas/Money' }
+        penaltyGraceDays: { type: integer, minimum: 0 }
+        penaltyMaxCap: { $ref: '#/components/schemas/Money' }
+        penaltyEffectiveFrom:
+          type: string
+          format: date
+          nullable: true
+          readOnly: true
+          description: Set by the server when penalties are enabled; earlier missed days are not charged
+        recordRetentionYears: { type: integer, minimum: 1 }
+        allocationOrder:
+          type: string
+          enum: [PENALTY_FIRST, INSTALLMENT_FIRST]
+        advanceAllocation:
+          type: string
+          enum: [NEXT_INSTALLMENTS, LAST_INSTALLMENTS]
+        preclosureEnabled: { type: boolean }
+        preclosureRebate:
+          type: string
+          enum: [NONE, UNEARNED_INTEREST]
+        preclosureChargeType:
+          type: string
+          enum: [NONE, FIXED, PERCENT]
+        preclosureChargeValue: { $ref: '#/components/schemas/Money' }
+
+    # ------------------------------------------------------------- user
+    User:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        phone: { type: string }
+        role: { $ref: '#/components/schemas/Role' }
+        isActive: { type: boolean }
+        areas:
+          type: array
+          items: { $ref: '#/components/schemas/Area' }
+        lastLoginAt: { type: string, format: date-time, nullable: true }
+    UserCreate:
+      type: object
+      required: [name, phone, pin]
+      properties:
+        name: { type: string, maxLength: 100 }
+        phone: { type: string, pattern: '^[6-9]\d{9}$' }
+        pin: { type: string, minLength: 4, maxLength: 6 }
+        areaIds:
+          type: array
+          items: { type: integer, format: int64 }
+    UserUpdate:
+      type: object
+      properties:
+        name: { type: string, maxLength: 100 }
+        isActive: { type: boolean }
+        pin: { type: string, minLength: 4, maxLength: 6 }
+
+    # ------------------------------------------------------------- area
+    Area:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        isActive: { type: boolean }
+    AreaInput:
+      type: object
+      properties:
+        name: { type: string, maxLength: 100 }
+        isActive: { type: boolean }
+
+    # ----------------------------------------------------------- client
+    Client:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        areaId: { type: integer, format: int64 }
+        areaName: { type: string }
+        name: { type: string }
+        phone: { type: string }
+        altPhone: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        aadhaarLast4: { type: string, nullable: true }
+        guarantorName: { type: string, nullable: true }
+        guarantorPhone: { type: string, nullable: true }
+        consentGivenAt: { type: string, format: date-time }
+        isActive: { type: boolean }
+    ClientCreate:
+      type: object
+      required: [areaId, name, phone, consentGiven, consentVersion]
+      properties:
+        areaId: { type: integer, format: int64 }
+        name: { type: string, maxLength: 100 }
+        phone: { type: string, pattern: '^[6-9]\d{9}$' }
+        altPhone: { type: string, pattern: '^[6-9]\d{9}$' }
+        address: { type: string, maxLength: 500 }
+        aadhaarLast4: { type: string, pattern: '^\d{4}$' }
+        guarantorName: { type: string, maxLength: 100 }
+        guarantorPhone: { type: string, pattern: '^[6-9]\d{9}$' }
+        consentGiven:
+          type: boolean
+          description: Must be true
+        consentVersion: { type: string, maxLength: 20 }
+    ClientUpdate:
+      type: object
+      properties:
+        areaId: { type: integer, format: int64 }
+        name: { type: string, maxLength: 100 }
+        altPhone: { type: string, pattern: '^[6-9]\d{9}$' }
+        address: { type: string, maxLength: 500 }
+        guarantorName: { type: string, maxLength: 100 }
+        guarantorPhone: { type: string, pattern: '^[6-9]\d{9}$' }
+        isActive: { type: boolean }
+    ClientDetail:
+      allOf:
+        - $ref: '#/components/schemas/Client'
+        - type: object
+          properties:
+            activeLoans:
+              type: array
+              items: { $ref: '#/components/schemas/LoanSummary' }
+            totalOutstanding: { $ref: '#/components/schemas/Money' }
+    ClientPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/Client' }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    ClientDocument:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        docType: { $ref: '#/components/schemas/DocType' }
+        url:
+          type: string
+          description: Path of the authenticated download endpoint (send the bearer token)
+        uploadedAt: { type: string, format: date-time }
+
+    # ------------------------------------------------------------- loan
+    LoanCreate:
+      type: object
+      required: [clientId, principal, interestRate, interestMethod, interestCollection, frequency, tenureCount, startDate]
+      properties:
+        clientId: { type: integer, format: int64 }
+        principal: { $ref: '#/components/schemas/Money' }
+        interestRate:
+          $ref: '#/components/schemas/Money'
+        interestMethod: { $ref: '#/components/schemas/InterestMethod' }
+        interestCollection: { $ref: '#/components/schemas/InterestCollection' }
+        frequency: { $ref: '#/components/schemas/Frequency' }
+        tenureCount:
+          type: integer
+          minimum: 1
+          description: Number of installments
+        startDate: { type: string, format: date }
+    LoanSummary:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        loanNo: { type: string }
+        principal: { $ref: '#/components/schemas/Money' }
+        frequency: { $ref: '#/components/schemas/Frequency' }
+        installmentAmount: { $ref: '#/components/schemas/Money' }
+        outstanding: { $ref: '#/components/schemas/Money' }
+        overdueAmount: { $ref: '#/components/schemas/Money' }
+        status: { $ref: '#/components/schemas/LoanStatus' }
+    Loan:
+      allOf:
+        - $ref: '#/components/schemas/LoanSummary'
+        - type: object
+          properties:
+            clientId: { type: integer, format: int64 }
+            clientName: { type: string }
+            interestRate: { $ref: '#/components/schemas/Money' }
+            interestMethod: { $ref: '#/components/schemas/InterestMethod' }
+            interestCollection: { $ref: '#/components/schemas/InterestCollection' }
+            interestAmount: { $ref: '#/components/schemas/Money' }
+            disbursedAmount: { $ref: '#/components/schemas/Money' }
+            totalPayable: { $ref: '#/components/schemas/Money' }
+            totalPaid: { $ref: '#/components/schemas/Money' }
+            pendingPenalty: { $ref: '#/components/schemas/Money' }
+            tenureCount: { type: integer }
+            startDate: { type: string, format: date }
+            originalEndDate: { type: string, format: date }
+            currentEndDate: { type: string, format: date }
+            legalNote: { type: string, nullable: true }
+            closedAt: { type: string, format: date-time, nullable: true }
+    LoanPreview:
+      type: object
+      properties:
+        interestAmount: { $ref: '#/components/schemas/Money' }
+        disbursedAmount: { $ref: '#/components/schemas/Money' }
+        totalPayable: { $ref: '#/components/schemas/Money' }
+        installmentAmount: { $ref: '#/components/schemas/Money' }
+        endDate: { type: string, format: date }
+        installments:
+          type: array
+          items: { $ref: '#/components/schemas/Installment' }
+    LoanPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/LoanSummary' }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    Installment:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        seqNo: { type: integer }
+        dueDate: { type: string, format: date }
+        dueAmount: { $ref: '#/components/schemas/Money' }
+        principalComponent: { $ref: '#/components/schemas/Money' }
+        interestComponent: { $ref: '#/components/schemas/Money' }
+        principalBalanceAfter: { $ref: '#/components/schemas/Money' }
+        paidAmount: { $ref: '#/components/schemas/Money' }
+        penaltyAmount: { $ref: '#/components/schemas/Money' }
+        penaltyPaid: { $ref: '#/components/schemas/Money' }
+        status: { $ref: '#/components/schemas/InstallmentStatus' }
+        isExtension: { type: boolean }
+
+    # ------------------------------------------------------- collections
+    DueItem:
+      type: object
+      properties:
+        loanId: { type: integer, format: int64 }
+        loanNo: { type: string }
+        clientId: { type: integer, format: int64 }
+        clientName: { type: string }
+        clientPhone: { type: string }
+        areaName: { type: string }
+        todayDue: { $ref: '#/components/schemas/Money' }
+        overdueAmount: { $ref: '#/components/schemas/Money' }
+        overdueCount: { type: integer }
+        penaltyDue: { $ref: '#/components/schemas/Money' }
+        totalDue: { $ref: '#/components/schemas/Money' }
+        collectedToday: { $ref: '#/components/schemas/Money' }
+
+    # ---------------------------------------------------------- payment
+    PaymentCreate:
+      type: object
+      required: [clientTxnId, loanId, amount, mode, paidOn]
+      properties:
+        clientTxnId:
+          type: string
+          format: uuid
+          description: Generated on device; idempotency key
+        loanId: { type: integer, format: int64 }
+        amount: { $ref: '#/components/schemas/Money' }
+        mode: { $ref: '#/components/schemas/PaymentMode' }
+        upiRefNo:
+          type: string
+          maxLength: 50
+          example: '431912345678'
+          description: |
+            UPI transaction ID (UTR). Required when mode is UPI: 12 digits (spaces are ignored).
+            Errors: UPI_REF_REQUIRED, INVALID_UPI_REF (422), DUPLICATE_UPI_REF (409). Ignored for CASH.
+        paidOn: { type: string, format: date-time }
+        remarks: { type: string, maxLength: 255 }
+    Payment:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        clientTxnId: { type: string, format: uuid }
+        loanId: { type: integer, format: int64 }
+        amount: { $ref: '#/components/schemas/Money' }
+        entryType:
+          type: string
+          enum: [PAYMENT, REVERSAL]
+        purpose:
+          type: string
+          enum: [REGULAR, PRECLOSURE]
+        reversalOf: { type: integer, format: int64, nullable: true }
+        mode: { $ref: '#/components/schemas/PaymentMode' }
+        upiRefNo: { type: string, nullable: true }
+        paidOn: { type: string, format: date-time }
+        collectedBy: { type: integer, format: int64 }
+        collectedByName: { type: string }
+        allocations:
+          type: array
+          items: { $ref: '#/components/schemas/Allocation' }
+        balanceAfter: { $ref: '#/components/schemas/Money' }
+    Allocation:
+      type: object
+      properties:
+        installmentId: { type: integer, format: int64 }
+        seqNo: { type: integer }
+        dueDate: { type: string, format: date }
+        amount: { $ref: '#/components/schemas/Money' }
+        penaltyPart: { $ref: '#/components/schemas/Money' }
+    LedgerEntry:
+      allOf:
+        - $ref: '#/components/schemas/Payment'
+        - type: object
+          properties:
+            runningBalance: { $ref: '#/components/schemas/Money' }
+    SyncResult:
+      type: object
+      properties:
+        clientTxnId: { type: string, format: uuid }
+        status:
+          type: string
+          enum: [CREATED, DUPLICATE, FAILED]
+        paymentId: { type: integer, format: int64, nullable: true }
+        error: { $ref: '#/components/schemas/Error' }
+
+    # -------------------------------------------------------- preclosure
+    PreclosureQuote:
+      type: object
+      properties:
+        loanId: { type: integer, format: int64 }
+        asOf: { type: string, format: date }
+        outstandingPrincipal: { $ref: '#/components/schemas/Money' }
+        outstandingInterest: { $ref: '#/components/schemas/Money' }
+        pendingPenalty: { $ref: '#/components/schemas/Money' }
+        interestRebate: { $ref: '#/components/schemas/Money' }
+        preclosureCharge: { $ref: '#/components/schemas/Money' }
+        settlementAmount: { $ref: '#/components/schemas/Money' }
+    PreclosureConfirm:
+      type: object
+      required: [clientTxnId, settlementAmount, mode, paidOn]
+      properties:
+        clientTxnId: { type: string, format: uuid }
+        settlementAmount:
+          $ref: '#/components/schemas/Money'
+        mode: { $ref: '#/components/schemas/PaymentMode' }
+        upiRefNo:
+          type: string
+          maxLength: 50
+          description: UPI transaction ID (UTR), same rules as PaymentCreate.upiRefNo
+        paidOn: { type: string, format: date-time }
+    PreclosureResult:
+      type: object
+      properties:
+        loan: { $ref: '#/components/schemas/Loan' }
+        payment: { $ref: '#/components/schemas/Payment' }
+        quote: { $ref: '#/components/schemas/PreclosureQuote' }
+
+    # ------------------------------------------------------ cash handover
+    CashHandover:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        agentId: { type: integer, format: int64 }
+        agentName: { type: string }
+        handoverDate: { type: string, format: date }
+        expectedAmount: { $ref: '#/components/schemas/Money' }
+        handedAmount: { $ref: '#/components/schemas/Money' }
+        difference: { $ref: '#/components/schemas/Money' }
+        status: { $ref: '#/components/schemas/HandoverStatus' }
+        receivedBy: { type: integer, format: int64, nullable: true }
+        remarks: { type: string, nullable: true }
+        confirmedAt: { type: string, format: date-time, nullable: true }
+
+    # ------------------------------------------------------------ reports
+    Dashboard:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        todayTarget: { $ref: '#/components/schemas/Money' }
+        todayCollected: { $ref: '#/components/schemas/Money' }
+        todayCash: { $ref: '#/components/schemas/Money' }
+        todayUpi: { $ref: '#/components/schemas/Money' }
+        totalOutstanding: { $ref: '#/components/schemas/Money' }
+        overdueAmount: { $ref: '#/components/schemas/Money' }
+        overdueLoans: { type: integer }
+        activeLoans: { type: integer }
+        pendingHandovers: { type: integer }
+    CollectionReportRow:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Date, agent name or area name per groupBy
+        target:
+          type: string
+          nullable: true
+          description: Amount due in the period; null when grouped by AGENT
+          example: '1250.00'
+        collected: { $ref: '#/components/schemas/Money' }
+        cash: { $ref: '#/components/schemas/Money' }
+        upi: { $ref: '#/components/schemas/Money' }
+        paymentCount: { type: integer }
+    InterestIncomeReport:
+      type: object
+      properties:
+        fy:
+          type: string
+          example: 2026-27
+        totalInterestIncome: { $ref: '#/components/schemas/Money' }
+        totalPenaltyIncome: { $ref: '#/components/schemas/Money' }
+        totalPreclosureCharges: { $ref: '#/components/schemas/Money' }
+        months:
+          type: array
+          items:
+            type: object
+            properties:
+              month:
+                type: string
+                example: 2026-04
+              interest: { $ref: '#/components/schemas/Money' }
+              penalty: { $ref: '#/components/schemas/Money' }
+              preclosureCharges: { $ref: '#/components/schemas/Money' }

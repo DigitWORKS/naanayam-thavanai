@@ -1,0 +1,29 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ / editors
+.idea/*
+!.idea/runConfigurations/
+*.iml
+out/
+.vscode/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+mobile/build/
+
+# Angular / Node
+node_modules/
+web/dist/
+web/.angular/
+
+# OS
+.DS_Store
+
+# Local environment and logs
+.env
+*.log
