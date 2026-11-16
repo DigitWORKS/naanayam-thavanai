@@ -396,7 +396,14 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Client' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        '409':
+          description: |
+            CLIENT_EXISTS — a client with this phone is already registered in the tenant.
+            `details` identifies them so the app can offer "Open existing client";
+            `accessible` is false when an agent is not assigned to that client's area.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientExistsError' }
 
   /clients/{clientId}:
     parameters:
@@ -515,6 +522,7 @@ paths:
       description: |
         Validates interest rate <= tenant cap, method is allowed,
         and client active loans < max_active_loans_per_client.
+        Owner only: apps hide "Save & give loan" / "New loan" when `user.role` is AGENT.
       requestBody:
         required: true
         content:
@@ -526,6 +534,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Loan' }
+        '403':
+          description: FORBIDDEN — caller is not an owner
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
   /loans/preview:
@@ -980,6 +993,24 @@ components:
         details:
           type: object
           additionalProperties: true
+    ClientExistsError:
+      type: object
+      required: [code, message, details]
+      properties:
+        code: { type: string, enum: [CLIENT_EXISTS] }
+        message: { type: string }
+        details:
+          type: object
+          required: [clientId, name, areaId, areaName, isActive, accessible]
+          properties:
+            clientId: { type: integer, format: int64 }
+            name: { type: string }
+            areaId: { type: integer, format: int64 }
+            areaName: { type: string }
+            isActive: { type: boolean }
+            accessible:
+              type: boolean
+              description: False when the calling agent is not assigned to this area
     PageMeta:
       type: object
       required: [page, size, totalElements, totalPages]

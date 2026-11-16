@@ -13,7 +13,7 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
 
     Optional<Client> findByIdAndTenantId(Long id, Long tenantId);
 
-    boolean existsByTenantIdAndPhone(Long tenantId, String phone);
+    Optional<Client> findByTenantIdAndPhone(Long tenantId, String phone);
 
     List<Client> findByTenantIdAndIdIn(Long tenantId, Collection<Long> ids);
 

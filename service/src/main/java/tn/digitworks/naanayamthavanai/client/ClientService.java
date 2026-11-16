@@ -16,6 +16,7 @@ import tn.digitworks.naanayamthavanai.security.CurrentUser;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,9 +69,9 @@ public class ClientService {
         CurrentUser me = CurrentUser.get();
         long tenantId = me.requireTenant();
         Area area = activeArea(tenantId, in.areaId());
-        if (clients.existsByTenantIdAndPhone(tenantId, in.phone())) {
-            throw ApiException.conflict("CLIENT_EXISTS", "A client with this phone number already exists");
-        }
+        clients.findByTenantIdAndPhone(tenantId, in.phone()).ifPresent(existing -> {
+            throw clientExists(tenantId, existing);
+        });
         Client c = new Client(tenantId, area.getId(), in.name().trim(), in.phone(), me.userId());
         c.setAltPhone(blankToNull(in.altPhone()));
         c.setAddress(blankToNull(in.address()));
@@ -159,6 +161,23 @@ public class ClientService {
             throw ApiException.rule("AREA_NOT_ASSIGNED", "You are not assigned to this area");
         }
         return area;
+    }
+
+    /**
+     * 409 with enough detail for the app to offer "Open existing client" instead of a dead end.
+     * {@code accessible} is false when an agent is not assigned to the client's area: the app shows
+     * the name and area but cannot open it (GET would be 404).
+     */
+    private ApiException clientExists(long tenantId, Client existing) {
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("clientId", existing.getId());
+        details.put("name", existing.getName());
+        details.put("areaId", existing.getAreaId());
+        details.put("areaName", areaNames(tenantId, Set.of(existing.getAreaId())).get(existing.getAreaId()));
+        details.put("isActive", existing.isActive());
+        details.put("accessible", areaScope.current().allows(existing.getAreaId()));
+        return new ApiException(HttpStatus.CONFLICT, "CLIENT_EXISTS",
+                "A client with this phone number already exists", details);
     }
 
     private Map<Long, String> areaNames(long tenantId, Set<Long> ids) {

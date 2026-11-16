@@ -179,8 +179,10 @@ API clients generated from `api-spec/openapi.yaml`:
       cap/methods, max loans, penalty, payment allocation, pre-closure, retention). Brand: deep green `#0E6B4F`,
       gold coin mark, Inter + Space Grotesk + Noto Sans Tamil.
 - [ ] Remaining designs: Tamil-language version; web (Angular) owner and Super Admin screens.
-- [ ] API gaps found while designing: return the existing client's id + name with `409 CLIENT_EXISTS`;
-      show "Save & give loan" to owners only (agents cannot create loans).
+- [x] API gaps found while designing: `409 CLIENT_EXISTS` now returns `details` {clientId, name, areaId,
+      areaName, isActive, accessible} (`accessible` false for an agent outside that area). Loan creation is
+      owner-only (`POST /loans` → 403 for agents); apps hide "Save & give loan" when `user.role` is AGENT.
+      (A simultaneous duplicate create still falls back to the generic `409 DUPLICATE` from the unique key.)
 - [ ] Flutter `mobile/`: scaffold (`flutter create --org apps.digitworks --project-name naanayamthavanai
       --platforms android,ios mobile`), generated client, offline storage (drift) with `clientTxnId` sync,
       Noto Sans Tamil font, Tamil + English strings.
