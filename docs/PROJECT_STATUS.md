@@ -183,9 +183,15 @@ API clients generated from `api-spec/openapi.yaml`:
       areaName, isActive, accessible} (`accessible` false for an agent outside that area). Loan creation is
       owner-only (`POST /loans` → 403 for agents); apps hide "Save & give loan" when `user.role` is AGENT.
       (A simultaneous duplicate create still falls back to the generic `409 DUPLICATE` from the unique key.)
-- [ ] Flutter `mobile/`: scaffold (`flutter create --org apps.digitworks --project-name naanayamthavanai
-      --platforms android,ios mobile`), generated client, offline storage (drift) with `clientTxnId` sync,
-      Noto Sans Tamil font, Tamil + English strings.
+- [~] Flutter `mobile/` slice 1 written (not yet compiled; platform folders come from `flutter create`, see
+      `mobile/README.md`): Riverpod + Dio + secure storage; login (SUPER_ADMIN refused, web only), token
+      refresh-once interceptor (offline keeps the session), agent Today list (summary, area chips, pull to
+      refresh), record payment (cash / UPI + 12-digit UTR, quick amounts, idempotent `clientTxnId`, form locks
+      after an unknown outcome). Money as integer paise. Owners currently land on the same Today list.
+- [ ] Flutter next: offline queue (drift) + `/payments/sync`, client list / new client / client detail, loan
+      detail, owner dashboard + new loan, handover, pre-closure, settings, register; bundled fonts (Inter,
+      Space Grotesk, Noto Sans Tamil) instead of google_fonts runtime fetch; Tamil + English strings;
+      generated API client; release INTERNET permission.
 - [ ] Angular `web/`: scaffold, generated client, owner screens, Super Admin tenant screens.
 
 ### Legal, product, infra

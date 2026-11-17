@@ -1,15 +1,50 @@
 # mobile (Flutter)
 
-Not scaffolded yet. From the repo root:
+Package ID `apps.digitworks.naanayamthavanai`. Riverpod (state), Dio (HTTP), flutter_secure_storage (tokens).
+
+## First-time setup
+
+`lib/`, `test/`, `pubspec.yaml` and the debug Android manifest are in the repo; the platform folders are generated.
+`flutter create` only adds missing files, so it keeps ours. From the repo root:
 
 ```bash
 flutter create --org apps.digitworks --project-name naanayamthavanai --platforms android,ios mobile
+cd mobile
+flutter pub get
+flutter test
 ```
 
-This gives the package ID `apps.digitworks.naanayamthavanai`.
+If `pub get` cannot resolve a version, run `flutter pub upgrade --major-versions`.
 
-API client (generated from `api-spec/openapi.yaml`):
+## Run against the local service
 
-```bash
-openapi-generator-cli generate -g dart-dio -i api-spec/openapi.yaml -o mobile/packages/api_client
+| Target | API URL |
+|---|---|
+| Android emulator | `http://10.0.2.2:8080/v1` (default) |
+| iOS simulator | `http://localhost:8080/v1` (default) |
+| Physical phone (same Wi-Fi) | `flutter run --dart-define=API_BASE_URL=http://<mac-lan-ip>:8080/v1` |
+
+- Android debug builds allow plain http (`android/app/src/debug/AndroidManifest.xml`).
+- iOS: for plain http to a LAN IP, add `NSAppTransportSecurity` → `NSAllowsLocalNetworking = YES` to `ios/Runner/Info.plist`.
+- Release builds need `<uses-permission android:name="android.permission.INTERNET"/>` in
+  `android/app/src/main/AndroidManifest.xml` (Flutter adds it only to debug/profile).
+
+## Structure
+
 ```
+lib/
+  core/        config (API URL), money (paise, decimal strings), api_client (bearer + refresh-once),
+               api_error, token_store, providers
+  theme/       colours and fonts from the design canvas
+  features/
+    auth/          login, session (SignedIn / SignedOut)
+    collections/   today's due list (agent home)
+    payments/      record payment (cash / UPI + UTR), idempotent clientTxnId
+```
+
+## Notes
+
+- Payments: `clientTxnId` is created when the form opens and reused on retry. If a submit gets no
+  response, the form locks and only allows "Try again" with the same data, so a payment is never recorded twice.
+- API models are hand-written for now; switch to a client generated from `api-spec/openapi.yaml` once the
+  screen set settles (`openapi-generator-cli generate -g dart-dio -i api-spec/openapi.yaml -o mobile/packages/api_client`).
