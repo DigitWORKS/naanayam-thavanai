@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -102,6 +103,19 @@ public class LoanService {
         Map<Long, List<Installment>> byLoan = installmentsByLoan(active);
         LocalDate today = LocalDate.now(clock);
         return active.stream().map(l -> toSummary(l, byLoan.getOrDefault(l.getId(), List.of()), today)).toList();
+    }
+
+    /** Active-loan summaries for a page of clients (client list), grouped by client id. */
+    @Transactional(readOnly = true)
+    public Map<Long, List<LoanSummary>> activeSummariesByClient(long tenantId, Collection<Long> clientIds) {
+        if (clientIds.isEmpty()) {
+            return Map.of();
+        }
+        List<Loan> active = loans.findByTenantIdAndClientIdInAndStatusOrderByIdDesc(tenantId, clientIds, Loan.Status.ACTIVE);
+        Map<Long, List<Installment>> byLoan = installmentsByLoan(active);
+        LocalDate today = LocalDate.now(clock);
+        return active.stream().collect(Collectors.groupingBy(Loan::getClientId,
+                Collectors.mapping(l -> toSummary(l, byLoan.getOrDefault(l.getId(), List.of()), today), Collectors.toList())));
     }
 
     // ---------------------------------------------------------------- commands

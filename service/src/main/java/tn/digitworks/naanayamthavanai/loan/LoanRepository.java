@@ -30,6 +30,9 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
 
     List<Loan> findByTenantIdAndClientIdAndStatusOrderByIdDesc(Long tenantId, Long clientId, Loan.Status status);
 
+    List<Loan> findByTenantIdAndClientIdInAndStatusOrderByIdDesc(Long tenantId, Collection<Long> clientIds,
+                                                                Loan.Status status);
+
     @Query("select l.id from Loan l where l.status = :status order by l.id")
     List<Long> findIdsByStatus(Loan.Status status);
 

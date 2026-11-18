@@ -2,6 +2,8 @@ package tn.digitworks.naanayamthavanai.client;
 
 import tn.digitworks.naanayamthavanai.client.ClientDtos.ClientCreate;
 import tn.digitworks.naanayamthavanai.client.ClientDtos.ClientDetail;
+import tn.digitworks.naanayamthavanai.client.ClientDtos.ClientFilter;
+import tn.digitworks.naanayamthavanai.client.ClientDtos.ClientListItem;
 import tn.digitworks.naanayamthavanai.client.ClientDtos.ClientResponse;
 import tn.digitworks.naanayamthavanai.client.ClientDtos.ClientUpdate;
 import tn.digitworks.naanayamthavanai.client.ClientDtos.DocumentResponse;
@@ -43,11 +45,12 @@ public class ClientController {
     }
 
     @GetMapping
-    public PageResponse<ClientResponse> search(@RequestParam(required = false) String q,
+    public PageResponse<ClientListItem> search(@RequestParam(required = false) String q,
                                                @RequestParam(required = false) Long areaId,
+                                               @RequestParam(defaultValue = "ALL") ClientFilter filter,
                                                @RequestParam(defaultValue = "0") @Min(0) int page,
                                                @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-        return service.search(q, areaId, page, size);
+        return service.search(q, areaId, filter, page, size);
     }
 
     @PostMapping

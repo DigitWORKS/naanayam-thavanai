@@ -4,13 +4,17 @@ import tn.digitworks.naanayamthavanai.area.Area;
 import tn.digitworks.naanayamthavanai.area.AreaRepository;
 import tn.digitworks.naanayamthavanai.client.ClientDtos.ClientCreate;
 import tn.digitworks.naanayamthavanai.client.ClientDtos.ClientDetail;
+import tn.digitworks.naanayamthavanai.client.ClientDtos.ClientFilter;
+import tn.digitworks.naanayamthavanai.client.ClientDtos.ClientListItem;
 import tn.digitworks.naanayamthavanai.client.ClientDtos.ClientResponse;
 import tn.digitworks.naanayamthavanai.client.ClientDtos.ClientUpdate;
 import tn.digitworks.naanayamthavanai.client.ClientDtos.DocumentResponse;
 import tn.digitworks.naanayamthavanai.common.ApiException;
 import tn.digitworks.naanayamthavanai.common.PageResponse;
 import tn.digitworks.naanayamthavanai.loan.LoanDtos.LoanSummary;
+import tn.digitworks.naanayamthavanai.loan.Loan;
 import tn.digitworks.naanayamthavanai.loan.LoanService;
+import tn.digitworks.naanayamthavanai.loan.schedule.LoanEnums.InstallmentStatus;
 import tn.digitworks.naanayamthavanai.security.AreaScope;
 import tn.digitworks.naanayamthavanai.security.CurrentUser;
 import org.springframework.core.io.Resource;
@@ -23,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,15 +58,28 @@ public class ClientService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ClientResponse> search(String q, Long areaId, int page, int size) {
+    public PageResponse<ClientListItem> search(String q, Long areaId, ClientFilter filter, int page, int size) {
         long tenantId = CurrentUser.get().requireTenant();
         AreaScope.Scope scope = areaScope.current();
         String query = q == null || q.isBlank() ? null : q.trim();
         Page<Client> result = clients.search(tenantId, query, areaId, scope.all(), scope.areaIds(),
+                (filter == null ? ClientFilter.ALL : filter).name(), Loan.Status.ACTIVE,
+                List.of(InstallmentStatus.PENDING, InstallmentStatus.PARTIAL), LocalDate.now(clock),
                 PageRequest.of(page, size));
-        Map<Long, String> areaNames = areaNames(tenantId, result.getContent().stream().map(Client::getAreaId)
-                .collect(Collectors.toSet()));
-        return PageResponse.of(result, c -> toResponse(c, areaNames.get(c.getAreaId())));
+        List<Client> rows = result.getContent();
+        Map<Long, String> areaNames = areaNames(tenantId, rows.stream().map(Client::getAreaId).collect(Collectors.toSet()));
+        Map<Long, List<LoanSummary>> loansByClient =
+                loanService.activeSummariesByClient(tenantId, rows.stream().map(Client::getId).toList());
+        return PageResponse.of(result, c -> toListItem(c, areaNames.get(c.getAreaId()),
+                loansByClient.getOrDefault(c.getId(), List.of())));
+    }
+
+    private static ClientListItem toListItem(Client c, String areaName, List<LoanSummary> active) {
+        BigDecimal zero = BigDecimal.ZERO.setScale(2);
+        return new ClientListItem(c.getId(), c.getAreaId(), areaName, c.getName(), c.getPhone(), c.isActive(),
+                active.size(),
+                active.stream().map(LoanSummary::outstanding).reduce(zero, BigDecimal::add),
+                active.stream().map(LoanSummary::overdueAmount).reduce(zero, BigDecimal::add));
     }
 
     @Transactional

@@ -40,6 +40,7 @@ lib/
   features/
     auth/          login, register (free trial), session (SignedIn / SignedOut)
     shell/         bottom navigation by role, account / log out, placeholders
+    clients/       client list (search, Behind / No active loan / area filters), new client, client detail
     dashboard/     owner home
     handover/      cash handovers (owner confirm / dispute)
     collections/   today's due list (agent home)

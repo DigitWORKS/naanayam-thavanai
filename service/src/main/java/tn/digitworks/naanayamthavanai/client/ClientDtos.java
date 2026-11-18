@@ -22,6 +22,14 @@ public final class ClientDtos {
                                  LocalDateTime consentGivenAt, boolean isActive) {
     }
 
+    /** Client list row: identity plus a roll-up of the client's active loans. */
+    public record ClientListItem(Long id, Long areaId, String areaName, String name, String phone, boolean isActive,
+                                 int activeLoans, BigDecimal outstanding, BigDecimal overdueAmount) {
+    }
+
+    /** Client list filter. BEHIND uses the same rule as LoanBalances.arrears. */
+    public enum ClientFilter { ALL, BEHIND, NO_ACTIVE_LOAN }
+
     public record ClientDetail(Long id, Long areaId, String areaName, String name, String phone, String altPhone,
                                String address, String aadhaarLast4, String guarantorName, String guarantorPhone,
                                LocalDateTime consentGivenAt, boolean isActive, List<LoanSummary> activeLoans,

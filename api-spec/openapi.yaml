@@ -374,6 +374,12 @@ paths:
         - name: areaId
           in: query
           schema: { type: integer, format: int64 }
+        - name: filter
+          in: query
+          description: |
+            BEHIND — an active loan has an open installment past due or carried forward;
+            NO_ACTIVE_LOAN — no active loan.
+          schema: { type: string, enum: [ALL, BEHIND, NO_ACTIVE_LOAN], default: ALL }
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
       responses:
@@ -1288,12 +1294,26 @@ components:
               type: array
               items: { $ref: '#/components/schemas/LoanSummary' }
             totalOutstanding: { $ref: '#/components/schemas/Money' }
+    ClientListItem:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        areaId: { type: integer, format: int64 }
+        areaName: { type: string }
+        name: { type: string }
+        phone: { type: string }
+        isActive: { type: boolean }
+        activeLoans: { type: integer }
+        outstanding: { $ref: '#/components/schemas/Money' }
+        overdueAmount:
+          allOf: [{ $ref: '#/components/schemas/Money' }]
+          description: Behind schedule across active loans
     ClientPage:
       type: object
       properties:
         content:
           type: array
-          items: { $ref: '#/components/schemas/Client' }
+          items: { $ref: '#/components/schemas/ClientListItem' }
         meta: { $ref: '#/components/schemas/PageMeta' }
     ClientDocument:
       type: object

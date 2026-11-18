@@ -189,15 +189,24 @@ API clients generated from `api-spec/openapi.yaml`:
       refresh), record payment (cash / UPI + 12-digit UTR, quick amounts, idempotent `clientTxnId`, form locks
       after an unknown outcome). Money as integer paise. Owners currently land on the same Today list.
 - [x] Swagger UI "Authorize" (bearer JWT) via `common/OpenApiConfig.java`.
-- [~] Flutter slice 2 written (to verify on the emulator): login matched to design (+91 field, PIN boxes,
+- [~] Flutter slice 3 written (to verify): Clients tab for owners and agents — list with search, filter chips
+      (All / Behind / No active loan) and area chips, outstanding + "₹x behind" per client, Load more paging;
+      New client (area from owner's active areas or agent's assigned areas, Aadhaar last 4 only, guarantor,
+      bilingual consent, 409 CLIENT_EXISTS shown inline with "Open client"); Client detail (call / WhatsApp,
+      active loans on track / behind, details, document count, Collect payment via today's due list, loan picker
+      for 2 loans). Backend: `GET /clients` rows now carry activeLoans / outstanding / overdueAmount (batched per
+      page) and a `filter` param (ALL / BEHIND / NO_ACTIVE_LOAN; BEHIND matches LoanBalances.arrears).
+      Deferred: client photos / document upload (needs image_picker + platform permissions), edit client,
+      "Save & give loan" (with New loan), loan progress bar (needs total payable in LoanSummary).
+- [x] Flutter slice 2, verified on the emulator: login matched to design (+91 field, PIN boxes,
       Register link, footer), register screen (free trial), role-based bottom navigation (owner Home / Today /
       Clients / Loans / More, with Reports + Settings under More since owners also collect and manage clients;
       agent Today / Clients / Handover / More; unbuilt tabs show a placeholder; log out moved to More; owner
       Today list filters by all active areas), owner dashboard (collected vs target, cash / UPI, outstanding, behind
       schedule, by-area progress, pending handovers with Confirm / Review → accept or dispute).
       Backend: `businessName` added to `GET /reports/dashboard`. Tamil / English switch waits for Tamil strings.
-- [ ] Flutter next (owner first): loans list + new loan + loan detail, clients list / new client / client
-      detail, settings, reports, pre-closure; then agent handover, offline queue (drift) + `/payments/sync`; bundled fonts (Inter,
+- [ ] Flutter next (owner first): loans list + new loan + loan detail, client photos, settings, reports,
+      pre-closure; then agent handover, offline queue (drift) + `/payments/sync`; bundled fonts (Inter,
       Space Grotesk, Noto Sans Tamil) instead of google_fonts runtime fetch; Tamil + English strings;
       generated API client; release INTERNET permission.
 - [ ] Angular `web/`: scaffold, generated client, owner screens, Super Admin tenant screens.

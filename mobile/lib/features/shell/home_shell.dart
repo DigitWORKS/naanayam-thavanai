@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../auth/auth_models.dart';
+import '../clients/clients_screen.dart';
 import '../collections/today_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import 'account_screen.dart';
@@ -36,8 +37,7 @@ class _HomeShellState extends State<HomeShell> {
   static List<_Tab> _ownerTabs(AppUser u) => [
         _Tab('Home', Icons.home_outlined, Icons.home, DashboardScreen(user: u)),
         _Tab('Today', Icons.today_outlined, Icons.today, TodayScreen(user: u)),
-        const _Tab('Clients', Icons.people_alt_outlined, Icons.people_alt,
-            ComingSoonScreen(title: 'Clients', note: 'Client list, new client and client details come next.')),
+        _Tab('Clients', Icons.people_alt_outlined, Icons.people_alt, ClientsScreen(user: u)),
         const _Tab('Loans', Icons.receipt_long_outlined, Icons.receipt_long,
             ComingSoonScreen(title: 'Loans', note: 'Loan list, new loan and loan details come next.')),
         _Tab(
@@ -55,8 +55,7 @@ class _HomeShellState extends State<HomeShell> {
 
   static List<_Tab> _agentTabs(AppUser u) => [
         _Tab('Today', Icons.today_outlined, Icons.today, TodayScreen(user: u)),
-        const _Tab('Clients', Icons.people_alt_outlined, Icons.people_alt,
-            ComingSoonScreen(title: 'Clients', note: 'Client list and new client come next.')),
+        _Tab('Clients', Icons.people_alt_outlined, Icons.people_alt, ClientsScreen(user: u)),
         const _Tab('Handover', Icons.account_balance_wallet_outlined, Icons.account_balance_wallet,
             ComingSoonScreen(title: 'Cash handover', note: "Hand over today's cash to the owner.")),
         _Tab('More', Icons.more_horiz, Icons.more_horiz, AccountScreen(user: u, title: 'More')),
