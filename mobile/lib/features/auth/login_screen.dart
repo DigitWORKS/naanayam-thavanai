@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/api_error.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/brand_mark.dart';
+import '../../widgets/form_widgets.dart';
 import 'auth_controller.dart';
+import 'register_screen.dart';
 
+/// Design board 1. The Tamil / English switch comes with the Tamil strings.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key, this.notice});
 
@@ -38,15 +40,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_form.currentState!.validate()) return;
+    if (!RegExp(r'^\d{4,6}$').hasMatch(_pin.text)) {
+      setState(() => _error = 'PIN is 4 to 6 digits.');
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      await ref.read(authControllerProvider.notifier).login(_phone.text, _pin.text);
+      await ref.read(authControllerProvider.notifier).login(PhoneField.digits(_phone), _pin.text);
     } on ApiError catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.status == 401 ? 'Wrong mobile number or PIN.' : e.message);
+      setState(() {
+        _error = e.status == 401 ? 'Wrong mobile number or PIN.' : e.message;
+        _pin.clear();
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -56,63 +65,79 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _form,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const _Brand(),
-                  const SizedBox(height: 40),
-                  const _Label('Mobile number'),
-                  TextFormField(
-                    controller: _phone,
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.next,
-                    autofillHints: const [AutofillHints.telephoneNumber],
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
-                    style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 1),
-                    decoration: const InputDecoration(
-                      prefixText: '+91  ',
-                      hintText: '10-digit number',
-                    ),
-                    validator: (v) =>
-                        RegExp(r'^[6-9]\d{9}$').hasMatch(v ?? '') ? null : 'Enter a valid 10-digit mobile number',
+        child: LayoutBuilder(
+          builder: (context, box) => SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+            child: ConstrainedBox(
+              // Full screen height so the footer sits at the bottom, scrolling when the keyboard is up.
+              constraints: BoxConstraints(minHeight: box.maxHeight - 56),
+              child: IntrinsicHeight(
+                child: Form(
+                  key: _form,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 40),
+                      const BrandMark(),
+                      const SizedBox(height: 48),
+                      const FieldLabel('Mobile number'),
+                      PhoneField(controller: _phone, textInputAction: TextInputAction.next),
+                      const SizedBox(height: 20),
+                      const FieldLabel('PIN'),
+                      PinBoxes(controller: _pin, hasError: _error != null, onSubmitted: (_) => _submit()),
+                      if (_error != null) ...[
+                        const SizedBox(height: 12),
+                        Text(_error!, style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+                      ],
+                      const SizedBox(height: 28),
+                      FilledButton(
+                        onPressed: _busy ? null : _submit,
+                        child: _busy
+                            ? const SizedBox.square(
+                                dimension: 22,
+                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                            : const Text('Log in'),
+                      ),
+                      const Spacer(),
+                      const SizedBox(height: 32),
+                      const Text(
+                        'Forgot your PIN? Ask your financier to reset it.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 14, color: AppColors.muted, height: 1.5),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(52),
+                          backgroundColor: AppColors.surface,
+                          side: const BorderSide(color: AppColors.border, width: 1.5),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        onPressed: _busy
+                            ? null
+                            : () => Navigator.of(context)
+                                .push(MaterialPageRoute<void>(builder: (_) => const RegisterScreen())),
+                        child: const Text.rich(TextSpan(
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.ink),
+                          children: [
+                            TextSpan(text: 'Run a finance business?  '),
+                            TextSpan(text: 'Register', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.brand)),
+                          ],
+                        )),
+                      ),
+                      const SizedBox(height: 12),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.lock_outline, size: 14, color: AppColors.muted),
+                          SizedBox(width: 8),
+                          Text('DigitWorks · Secure login',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.muted)),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
-                  const _Label('PIN'),
-                  TextFormField(
-                    controller: _pin,
-                    obscureText: true,
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.done,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
-                    style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: 8),
-                    decoration: const InputDecoration(hintText: '4–6 digits'),
-                    validator: (v) => RegExp(r'^\d{4,6}$').hasMatch(v ?? '') ? null : 'PIN is 4 to 6 digits',
-                    onFieldSubmitted: (_) => _submit(),
-                  ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 16),
-                    Text(_error!, style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
-                  ],
-                  const SizedBox(height: 28),
-                  FilledButton(
-                    onPressed: _busy ? null : _submit,
-                    child: _busy
-                        ? const SizedBox.square(
-                            dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                        : const Text('Log in'),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Forgot your PIN? Ask your financier to reset it.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.muted),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -120,40 +145,4 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
   }
-}
-
-class _Brand extends StatelessWidget {
-  const _Brand();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 72,
-          height: 72,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(color: AppColors.gold, shape: BoxShape.circle),
-          child: Text('நா', style: GoogleFonts.notoSansTamil(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.ink)),
-        ),
-        const SizedBox(height: 16),
-        Text('நாணயம் தவணை', style: GoogleFonts.notoSansTamil(fontSize: 24, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 4),
-        Text('NAANAYAM THAVANAI',
-            style: GoogleFonts.spaceGrotesk(fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 2, color: AppColors.muted)),
-      ],
-    );
-  }
-}
-
-class _Label extends StatelessWidget {
-  const _Label(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(text, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-      );
 }

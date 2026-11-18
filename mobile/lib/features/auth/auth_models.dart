@@ -61,3 +61,35 @@ class TokenResponse {
         userJson: json['user'] as Map<String, dynamic>,
       );
 }
+
+/// POST /auth/register body. Only the free trial is self-serve; paid plans are chosen later.
+class RegisterInput {
+  const RegisterInput({
+    required this.businessName,
+    this.licenceNo,
+    required this.maxInterestRate,
+    required this.ownerName,
+    required this.phone,
+    required this.pin,
+  });
+
+  final String businessName;
+  final String? licenceNo;
+
+  /// Decimal string, e.g. "24.00".
+  final String maxInterestRate;
+  final String ownerName;
+  final String phone;
+  final String pin;
+
+  Map<String, dynamic> toJson() => {
+        'businessName': businessName,
+        if (licenceNo != null && licenceNo!.isNotEmpty) 'licenceNo': licenceNo,
+        'maxInterestRate': maxInterestRate,
+        'ownerName': ownerName,
+        'phone': phone,
+        'pin': pin,
+        'plan': 'TRIAL',
+        'acceptTerms': true,
+      };
+}

@@ -70,6 +70,20 @@ class AppTheme {
           textStyle: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w600),
         ),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: AppColors.brandTint,
+        height: 68,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) => GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: states.contains(WidgetState.selected) ? AppColors.brand : AppColors.muted,
+            )),
+        iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
+              color: states.contains(WidgetState.selected) ? AppColors.brand : AppColors.muted,
+            )),
+      ),
       cardTheme: CardThemeData(
         color: AppColors.surface,
         elevation: 0,

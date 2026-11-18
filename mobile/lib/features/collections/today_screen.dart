@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import '../../core/api_error.dart';
 import '../../core/money.dart';
 import '../../theme/app_theme.dart';
-import '../auth/auth_controller.dart';
 import '../auth/auth_models.dart';
 import '../payments/record_payment_screen.dart';
 import 'collections_repository.dart';
@@ -51,12 +50,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             Text("Today's collections", style: AppTheme.heading(22)),
           ],
         ),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (_) => ref.read(authControllerProvider.notifier).logout(),
-            itemBuilder: (_) => const [PopupMenuItem(value: 'logout', child: Text('Log out'))],
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: _refresh,
@@ -75,7 +68,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   Widget _list(List<DueItem> items) {
     // Loans still to collect first; ones settled today at the bottom.
     final ordered = [...items.where((i) => !i.isSettledToday), ...items.where((i) => i.isSettledToday)];
-    final areas = widget.user.areas;
+    // Owners see every area; agents only their assigned ones.
+    final areas = widget.user.isOwner
+        ? switch (ref.watch(activeAreasProvider)) {
+            AsyncData(:final value) => value,
+            _ => const <AreaRef>[],
+          }
+        : widget.user.areas;
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),

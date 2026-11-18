@@ -45,6 +45,24 @@ class AuthController extends Notifier<AuthState> {
     if (tokens.user.role == Role.superAdmin) {
       throw const ApiError(code: 'WEB_ONLY', message: 'Super Admin uses the web app.');
     }
+    await _signIn(tokens);
+  }
+
+  /// Self-registration: creates the financier on the free trial and signs the owner in.
+  Future<void> register(RegisterInput input) async {
+    final dio = ref.read(apiClientProvider);
+    final tokens = await ApiError.guard(() async {
+      final res = await dio.post<Map<String, dynamic>>(
+        '/auth/register',
+        data: input.toJson(),
+        options: Options(extra: {kNoAuth: true}),
+      );
+      return TokenResponse.fromJson(res.data!);
+    });
+    await _signIn(tokens);
+  }
+
+  Future<void> _signIn(TokenResponse tokens) async {
     await ref.read(tokenStoreProvider).save(
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,

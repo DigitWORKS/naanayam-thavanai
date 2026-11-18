@@ -29,7 +29,7 @@ public class ReportService {
 
     public enum GroupBy { DAY, AGENT, AREA }
 
-    public record Dashboard(LocalDate date, BigDecimal todayTarget, BigDecimal todayCollected, BigDecimal todayCash,
+    public record Dashboard(LocalDate date, String businessName, BigDecimal todayTarget, BigDecimal todayCollected, BigDecimal todayCash,
                             BigDecimal todayUpi, BigDecimal totalOutstanding, BigDecimal overdueAmount,
                             long overdueLoans, long activeLoans, long pendingHandovers) {
     }
@@ -90,7 +90,9 @@ public class ReportService {
         long activeLoans = ((Number) single("select count(*) from loan where tenant_id = :t and status = 'ACTIVE'",
                 Map.of("t", t))).longValue();
 
-        return new Dashboard(day, target, money(coll[0]), money(coll[1]), money(coll[2]), money(bal[0]),
+        String businessName = (String) single("select name from tenant where id = :t", Map.of("t", t));
+
+        return new Dashboard(day, businessName, target, money(coll[0]), money(coll[1]), money(coll[2]), money(bal[0]),
                 money(bal[1]), ((Number) bal[2]).longValue(), activeLoans,
                 handovers.countByTenantIdAndStatus(t, CashHandover.Status.PENDING));
     }

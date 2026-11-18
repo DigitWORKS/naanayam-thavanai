@@ -5,7 +5,7 @@ import 'core/providers.dart';
 import 'core/token_store.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/auth/login_screen.dart';
-import 'features/collections/today_screen.dart';
+import 'features/shell/home_shell.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -34,8 +34,7 @@ class NaanayamApp extends ConsumerWidget {
       theme: AppTheme.light(),
       home: switch (auth) {
         SignedOut(:final notice) => LoginScreen(key: const ValueKey('login'), notice: notice),
-        // Owners get the same list until the dashboard screen is built.
-        SignedIn(:final user) => TodayScreen(key: ValueKey('today-${user.id}'), user: user),
+        SignedIn(:final user) => HomeShell(user: user),
       },
     );
   }

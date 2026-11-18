@@ -12,6 +12,8 @@ class AppConfig {
   static String get apiBaseUrl {
     if (_apiFromEnv.isNotEmpty) return _apiFromEnv;
     // Android emulator reaches the host machine on 10.0.2.2; iOS simulator shares localhost.
-    return Platform.isAndroid ? 'http://10.0.2.2:8080/v1' : 'http://localhost:8080/v1';
+    return Platform.isAndroid
+        ? 'http://192.168.1.7:8080/v1'
+        : 'http://localhost:8080/v1';
   }
 }

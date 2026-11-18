@@ -36,11 +36,18 @@ lib/
   core/        config (API URL), money (paise, decimal strings), api_client (bearer + refresh-once),
                api_error, token_store, providers
   theme/       colours and fonts from the design canvas
+  widgets/     shared form widgets (phone field, PIN boxes, labels, sections), brand mark
   features/
-    auth/          login, session (SignedIn / SignedOut)
+    auth/          login, register (free trial), session (SignedIn / SignedOut)
+    shell/         bottom navigation by role, account / log out, placeholders
+    dashboard/     owner home
+    handover/      cash handovers (owner confirm / dispute)
     collections/   today's due list (agent home)
     payments/      record payment (cash / UPI + UTR), idempotent clientTxnId
 ```
+
+Bottom navigation: owner Home / Today / Clients / Loans / More (Reports, Settings under More); agent Today /
+Clients / Handover / More. Owners collect and manage clients too. Tabs not built yet show a placeholder.
 
 ## Notes
 

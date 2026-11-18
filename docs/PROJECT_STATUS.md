@@ -183,13 +183,21 @@ API clients generated from `api-spec/openapi.yaml`:
       areaName, isActive, accessible} (`accessible` false for an agent outside that area). Loan creation is
       owner-only (`POST /loans` → 403 for agents); apps hide "Save & give loan" when `user.role` is AGENT.
       (A simultaneous duplicate create still falls back to the generic `409 DUPLICATE` from the unique key.)
-- [~] Flutter `mobile/` slice 1 written (not yet compiled; platform folders come from `flutter create`, see
-      `mobile/README.md`): Riverpod + Dio + secure storage; login (SUPER_ADMIN refused, web only), token
+- [x] Flutter `mobile/` slice 1, built and running on the Android emulator against the local service
+      (Android Studio; platform folders from `flutter create`, see `mobile/README.md`): Riverpod + Dio + secure storage; login (SUPER_ADMIN refused, web only), token
       refresh-once interceptor (offline keeps the session), agent Today list (summary, area chips, pull to
       refresh), record payment (cash / UPI + 12-digit UTR, quick amounts, idempotent `clientTxnId`, form locks
       after an unknown outcome). Money as integer paise. Owners currently land on the same Today list.
-- [ ] Flutter next: offline queue (drift) + `/payments/sync`, client list / new client / client detail, loan
-      detail, owner dashboard + new loan, handover, pre-closure, settings, register; bundled fonts (Inter,
+- [x] Swagger UI "Authorize" (bearer JWT) via `common/OpenApiConfig.java`.
+- [~] Flutter slice 2 written (to verify on the emulator): login matched to design (+91 field, PIN boxes,
+      Register link, footer), register screen (free trial), role-based bottom navigation (owner Home / Today /
+      Clients / Loans / More, with Reports + Settings under More since owners also collect and manage clients;
+      agent Today / Clients / Handover / More; unbuilt tabs show a placeholder; log out moved to More; owner
+      Today list filters by all active areas), owner dashboard (collected vs target, cash / UPI, outstanding, behind
+      schedule, by-area progress, pending handovers with Confirm / Review → accept or dispute).
+      Backend: `businessName` added to `GET /reports/dashboard`. Tamil / English switch waits for Tamil strings.
+- [ ] Flutter next (owner first): loans list + new loan + loan detail, clients list / new client / client
+      detail, settings, reports, pre-closure; then agent handover, offline queue (drift) + `/payments/sync`; bundled fonts (Inter,
       Space Grotesk, Noto Sans Tamil) instead of google_fonts runtime fetch; Tamil + English strings;
       generated API client; release INTERNET permission.
 - [ ] Angular `web/`: scaffold, generated client, owner screens, Super Admin tenant screens.
