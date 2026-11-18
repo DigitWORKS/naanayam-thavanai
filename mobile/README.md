@@ -42,7 +42,7 @@ lib/
     shell/         bottom navigation by role, account / log out, placeholders
     clients/       client list (search, Behind / No active loan / area filters), new client, client detail
     dashboard/     owner home
-    handover/      cash handovers (owner confirm / dispute)
+    handover/      cash handover (agent hands over, owner confirms / disputes)
     loans/         loan list by status, new loan with live preview, loan detail (schedule / payments), pre-close quote
     collections/   today's due list (agent home)
     payments/      record payment (cash / UPI + UTR), idempotent clientTxnId

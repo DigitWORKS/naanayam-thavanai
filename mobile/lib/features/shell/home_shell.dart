@@ -4,6 +4,7 @@ import '../auth/auth_models.dart';
 import '../clients/clients_screen.dart';
 import '../collections/today_screen.dart';
 import '../dashboard/dashboard_screen.dart';
+import '../handover/handover_screen.dart';
 import '../loans/loans_screen.dart';
 import '../settings/settings_screen.dart';
 import 'account_screen.dart';
@@ -56,8 +57,7 @@ class _HomeShellState extends State<HomeShell> {
   static List<_Tab> _agentTabs(AppUser u) => [
         _Tab('Today', Icons.today_outlined, Icons.today, TodayScreen(user: u)),
         _Tab('Clients', Icons.people_alt_outlined, Icons.people_alt, ClientsScreen(user: u)),
-        const _Tab('Handover', Icons.account_balance_wallet_outlined, Icons.account_balance_wallet,
-            ComingSoonScreen(title: 'Cash handover', note: "Hand over today's cash to the owner.")),
+        _Tab('Handover', Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, HandoverScreen(user: u)),
         _Tab('More', Icons.more_horiz, Icons.more_horiz, AccountScreen(user: u, title: 'More')),
       ];
 

@@ -7,7 +7,7 @@ Last updated: 2026-11-14
 ### Build order
 | # | Step | Status |
 |---|---|---|
-| 1 | API spec + DB schema | ✅ Done (spec 44 operations, migrations V1–V8) |
+| 1 | API spec + DB schema | ✅ Done (spec 45 operations, migrations V1–V8) |
 | 2 | Backend core logic (schedule, allocation, missed days, pre-closure) | ✅ Done, unit tested |
 | 3 | Backend: entities, repositories, services, controllers | ✅ Done |
 | 4 | First run on local MySQL | ✅ Done 2026-11-14: Flyway V1–V6 applied, Hibernate validation passed, Super Admin created |
@@ -189,6 +189,12 @@ API clients generated from `api-spec/openapi.yaml`:
       refresh), record payment (cash / UPI + 12-digit UTR, quick amounts, idempotent `clientTxnId`, form locks
       after an unknown outcome). Money as integer paise. Owners currently land on the same Today list.
 - [x] Swagger UI "Authorize" (bearer JWT) via `common/OpenApiConfig.java`.
+- [~] Flutter slice 7 written (to verify): agent Cash handover tab (design board 11) — cash collected today (count,
+      last time), UPI note, amount handed (prefilled, matches / short / extra), note required when it differs,
+      confirm dialog, once per day (409 HANDOVER_EXISTS → shows today's handover), today's status (waiting /
+      confirmed / disputed) and earlier days (last 14). Backend: GET /cash-handovers/preview (agent) — cash and
+      UPI totals, cash payment count, last cash time, existing handover; spec now 45 operations.
+      Deferred: "See list" of today's cash payments; handing over a previous unsubmitted day.
 - [~] Flutter slice 6 written (to verify): Settings (owner, More → Settings; design board 13) — plan card (plan,
       expiry, days left; Upgrade explains that DigitWorks updates plans until billing exists), interest cap + allowed
       methods, active loans per client stepper, late penalty (on/off, fixed ₹ / % of missed amount, grace days,
@@ -225,7 +231,7 @@ API clients generated from `api-spec/openapi.yaml`:
       Today list filters by all active areas), owner dashboard (collected vs target, cash / UPI, outstanding, behind
       schedule, by-area progress, pending handovers with Confirm / Review → accept or dispute).
       Backend: `businessName` added to `GET /reports/dashboard`. Tamil / English switch waits for Tamil strings.
-- [ ] Flutter next (owner first): reports, client photos; then agent handover, offline queue (drift) + `/payments/sync`; bundled fonts (Inter,
+- [ ] Flutter next: client photos, reports (later, per owner); then agent handover, offline queue (drift) + `/payments/sync`; bundled fonts (Inter,
       Space Grotesk, Noto Sans Tamil) instead of google_fonts runtime fetch; Tamil + English strings;
       generated API client; release INTERNET permission.
 - [ ] Angular `web/`: scaffold, generated client, owner screens, Super Admin tenant screens.

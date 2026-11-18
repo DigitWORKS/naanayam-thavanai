@@ -36,6 +36,14 @@ public class CashHandoverService {
                                  @Size(max = 255) String remarks) {
     }
 
+    /**
+     * What the agent is about to hand over for a day. {@code cashCollected} is the same sum the server
+     * stores as expectedAmount on submit; {@code existing} is set when that day was already handed over.
+     */
+    public record HandoverPreview(LocalDate date, BigDecimal cashCollected, long cashPayments, LocalDateTime lastCashAt,
+                                  BigDecimal upiCollected, HandoverResponse existing) {
+    }
+
     public record HandoverDecision(@NotNull CashHandover.Status status, @Size(max = 255) String remarks) {
     }
 
@@ -60,6 +68,26 @@ public class CashHandoverService {
         List<CashHandover> list = handovers.search(me.requireTenant(), agent, status, from, to);
         Map<Long, String> names = names(list.stream().map(CashHandover::getAgentId).collect(Collectors.toSet()));
         return list.stream().map(h -> toResponse(h, names.get(h.getAgentId()))).toList();
+    }
+
+    /** Agent only: today's (or {@code date}'s) cash and UPI totals before handing over. */
+    @Transactional(readOnly = true)
+    public HandoverPreview preview(LocalDate date) {
+        CurrentUser me = CurrentUser.get();
+        long tenantId = me.requireTenant();
+        LocalDate day = date == null ? LocalDate.now(clock) : date;
+        LocalDateTime from = day.atStartOfDay();
+        LocalDateTime to = day.plusDays(1).atStartOfDay();
+        BigDecimal cash = payments.sumByCollector(tenantId, me.userId(), Payment.Mode.CASH, from, to).setScale(2);
+        BigDecimal upi = payments.sumByCollector(tenantId, me.userId(), Payment.Mode.UPI, from, to).setScale(2);
+        List<Object[]> stats = payments.countAndLastByCollector(tenantId, me.userId(), Payment.Mode.CASH,
+                Payment.EntryType.PAYMENT, from, to);
+        Object[] row = stats.isEmpty() ? new Object[]{0L, null} : stats.get(0);
+        HandoverResponse existing = handovers.search(tenantId, me.userId(), null, day, day).stream()
+                .findFirst()
+                .map(h -> toResponse(h, names(Set.of(me.userId())).get(me.userId())))
+                .orElse(null);
+        return new HandoverPreview(day, cash, ((Number) row[0]).longValue(), (LocalDateTime) row[1], upi, existing);
     }
 
     @Transactional

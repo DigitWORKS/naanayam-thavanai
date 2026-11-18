@@ -1,6 +1,7 @@
 package tn.digitworks.naanayamthavanai.handover;
 
 import tn.digitworks.naanayamthavanai.handover.CashHandoverService.HandoverDecision;
+import tn.digitworks.naanayamthavanai.handover.CashHandoverService.HandoverPreview;
 import tn.digitworks.naanayamthavanai.handover.CashHandoverService.HandoverResponse;
 import tn.digitworks.naanayamthavanai.handover.CashHandoverService.HandoverSubmit;
 import jakarta.validation.Valid;
@@ -37,6 +38,13 @@ public class CashHandoverController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) CashHandover.Status status) {
         return service.list(agentId, from, to, status);
+    }
+
+    @GetMapping("/preview")
+    @PreAuthorize("hasRole('AGENT')")
+    public HandoverPreview preview(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return service.preview(date);
     }
 
     @PostMapping

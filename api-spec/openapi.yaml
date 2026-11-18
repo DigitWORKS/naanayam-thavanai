@@ -827,6 +827,22 @@ paths:
               schema: { $ref: '#/components/schemas/CashHandover' }
         '409': { $ref: '#/components/responses/Conflict' }
 
+  /cash-handovers/preview:
+    get:
+      tags: [Cash handover]
+      summary: Agent's cash and UPI totals for a day before handing over
+      parameters:
+        - name: date
+          in: query
+          description: Defaults to today (IST)
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Totals; `existing` is set when the day was already handed over
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HandoverPreview' }
+
   /cash-handovers/{handoverId}/confirm:
     parameters:
       - name: handoverId
@@ -1531,6 +1547,19 @@ components:
         quote: { $ref: '#/components/schemas/PreclosureQuote' }
 
     # ------------------------------------------------------ cash handover
+    HandoverPreview:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        cashCollected:
+          allOf: [{ $ref: '#/components/schemas/Money' }]
+          description: Cash payments minus cash reversals; stored as expectedAmount on submit
+        cashPayments: { type: integer }
+        lastCashAt: { type: string, format: date-time, nullable: true }
+        upiCollected: { $ref: '#/components/schemas/Money' }
+        existing:
+          allOf: [{ $ref: '#/components/schemas/CashHandover' }]
+          nullable: true
     CashHandover:
       type: object
       properties:
