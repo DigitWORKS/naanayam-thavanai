@@ -178,7 +178,19 @@ API clients generated from `api-spec/openapi.yaml`:
       plan choice), client detail, cash handover (agent → owner), pre-closure quote, owner settings (plan, interest
       cap/methods, max loans, penalty, payment allocation, pre-closure, retention). Brand: deep green `#0E6B4F`,
       gold coin mark, Inter + Space Grotesk + Noto Sans Tamil.
-- [ ] Remaining designs: Tamil-language version; web (Angular) owner and Super Admin screens.
+- [x] Web (Angular) design, 11 screens + shared side menu (same canvas, second row): login; owner dashboard (KPIs,
+      today by agent / area, handovers, most behind); loans table (status tabs, filters, paging); loan detail
+      (summary, terms, payments with Reverse, schedule table, Mark defaulted); clients (list + detail panel with
+      documents); cash handovers (tabs, review panel); agents & areas (agent table, add agent, areas); settings;
+      Super Admin financiers (list + plan / expiry / licence / suspend panel); reports: collections (period presets,
+      group by day / agent / area, bar chart vs target with hover, table) and income for tax (FY, interest /
+      penalty / pre-closure by month, received basis). Agents stay on mobile.
+- [ ] API gaps found in the web design: GET /loans needs q, areaId, frequency, behind-only filter, sort by amount
+      behind, CSV export; areas need client count + assigned agents; FY interest-earned total for the dashboard;
+      installment should say which extension a missed day moved to (#59 → #101); admin tenant list needs search
+      and "expiring in 7 days"; Super Admin owner-PIN reset (support); an agent's cash payments for one day
+      (handover "See list"); interest-income export for the CA (Excel / CSV; the API only returns JSON).
+- [ ] Remaining designs: Tamil-language version.
 - [x] API gaps found while designing: `409 CLIENT_EXISTS` now returns `details` {clientId, name, areaId,
       areaName, isActive, accessible} (`accessible` false for an agent outside that area). Loan creation is
       owner-only (`POST /loans` → 403 for agents); apps hide "Save & give loan" when `user.role` is AGENT.
@@ -189,6 +201,14 @@ API clients generated from `api-spec/openapi.yaml`:
       refresh), record payment (cash / UPI + 12-digit UTR, quick amounts, idempotent `clientTxnId`, form locks
       after an unknown outcome). Money as integer paise. Owners currently land on the same Today list.
 - [x] Swagger UI "Authorize" (bearer JWT) via `common/OpenApiConfig.java`.
+- [~] Flutter slice 8 written (to verify): offline payment queue. A payment that gets no response is saved on the
+      phone (sqflite, table pending_payment, keyed by clientTxnId and the collecting user) and sent with
+      POST /payments/sync on app start, resume, every minute while waiting, after saving, pull to refresh and
+      "Sync now". CREATED / DUPLICATE → removed; FAILED DUPLICATE (concurrent write) → retried; other FAILED →
+      "Needs attention" with Retry / Discard; a 400 batch is re-sent one by one. Today list shows a banner and
+      "₹x saved on phone" per loan; Handover is blocked until saved payments are sent; log out warns (queue is
+      kept per user and sent on next login). Decision logic unit tested (test/sync_outcome_test.dart).
+      Chose sqflite over drift (no build_runner step). No backend change.
 - [~] Flutter slice 7 written (to verify): agent Cash handover tab (design board 11) — cash collected today (count,
       last time), UPI note, amount handed (prefilled, matches / short / extra), note required when it differs,
       confirm dialog, once per day (409 HANDOVER_EXISTS → shows today's handover), today's status (waiting /
@@ -231,7 +251,7 @@ API clients generated from `api-spec/openapi.yaml`:
       Today list filters by all active areas), owner dashboard (collected vs target, cash / UPI, outstanding, behind
       schedule, by-area progress, pending handovers with Confirm / Review → accept or dispute).
       Backend: `businessName` added to `GET /reports/dashboard`. Tamil / English switch waits for Tamil strings.
-- [ ] Flutter next: client photos, reports (later, per owner); then agent handover, offline queue (drift) + `/payments/sync`; bundled fonts (Inter,
+- [ ] Flutter next: to be decided with the owner. Deferred by owner: client photos / document upload, reports; then agent handover, offline queue (drift) + `/payments/sync`; bundled fonts (Inter,
       Space Grotesk, Noto Sans Tamil) instead of google_fonts runtime fetch; Tamil + English strings;
       generated API client; release INTERNET permission.
 - [ ] Angular `web/`: scaffold, generated client, owner screens, Super Admin tenant screens.

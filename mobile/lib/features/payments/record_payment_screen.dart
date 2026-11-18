@@ -8,6 +8,7 @@ import '../../core/api_error.dart';
 import '../../core/money.dart';
 import '../../theme/app_theme.dart';
 import '../collections/due_item.dart';
+import '../sync/payment_queue.dart';
 import 'payments_repository.dart';
 
 /// Design board 3: collect a payment (cash or UPI with UTR). Pops `true` once recorded.
@@ -33,10 +34,6 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
   PaymentMode _mode = PaymentMode.cash;
   bool _busy = false;
   String? _error;
-
-  /// Set when a submit got no response: the payment may already be recorded, so the
-  /// inputs are locked and only an identical retry is allowed.
-  bool _outcomeUnknown = false;
 
   DueItem get item => widget.item;
 
@@ -64,7 +61,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_outcomeUnknown && !_form.currentState!.validate()) return;
+    if (!_form.currentState!.validate()) return;
     setState(() {
       _busy = true;
       _error = null;
@@ -84,15 +81,45 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
       if (mounted) Navigator.of(context).pop(true);
     } on ApiError catch (e) {
       if (!mounted) return;
-      setState(() {
-        _outcomeUnknown = e.isNetwork;
-        _error = e.isNetwork
-            ? "Couldn't confirm the payment. Check the connection and tap Try again — it will not be recorded twice."
-            : _message(e);
-      });
+      if (e.isNetwork) {
+        // No connection (or no answer): keep it on the phone under the same clientTxnId. If the first
+        // attempt did reach the server, the sync is answered DUPLICATE and nothing is recorded twice.
+        await _saveOffline(draft);
+        return;
+      }
+      setState(() => _error = _message(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _saveOffline(PaymentDraft draft) async {
+    try {
+      await ref
+          .read(paymentQueueProvider.notifier)
+          .enqueue(draft, loanNo: item.loanNo, clientName: item.clientName);
+    } on ApiError catch (e) {
+      if (mounted) setState(() => _error = e.message);
+      return;
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Could not save the payment on this phone. Try again.');
+      return;
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.cloud_upload_outlined, color: AppColors.warning, size: 40),
+        title: Text('${draft.amount.format()} saved on phone'),
+        content: Text(
+          'No internet right now. The payment from ${item.clientName} is saved and will be sent automatically '
+          'when the connection is back.',
+          textAlign: TextAlign.center,
+        ),
+        actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('OK'))],
+      ),
+    );
+    if (mounted) Navigator.of(context).pop(true);
   }
 
   String _message(ApiError e) => switch (e.code) {
@@ -115,7 +142,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final locked = _busy || _outcomeUnknown;
+    final locked = _busy;
     final behind = item.overdueCount > 0;
 
     return PopScope(
@@ -247,7 +274,6 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
   }
 
   String _submitLabel() {
-    if (_outcomeUnknown) return 'Try again';
     final amount = _parsedAmount;
     final verb = _mode == PaymentMode.upi ? 'Record UPI' : 'Record cash';
     return amount != null && amount.isPositive ? '$verb ${amount.format()}' : verb;

@@ -47,6 +47,7 @@ lib/
     collections/   today's due list (agent home)
     payments/      record payment (cash / UPI + UTR), idempotent clientTxnId
     settings/      owner business settings and plan card
+    sync/          offline payment queue (sqflite) and /payments/sync
 ```
 
 Bottom navigation: owner Home / Today / Clients / Loans / More (Reports, Settings under More); agent Today /
@@ -54,7 +55,8 @@ Clients / Handover / More. Owners collect and manage clients too. Tabs not built
 
 ## Notes
 
-- Payments: `clientTxnId` is created when the form opens and reused on retry. If a submit gets no
-  response, the form locks and only allows "Try again" with the same data, so a payment is never recorded twice.
+- Payments: `clientTxnId` is created when the form opens. If a submit gets no response, the payment is saved on
+  the phone under the same id and sent later with `/payments/sync`; the server answers DUPLICATE if the first
+  attempt had got through, so a payment is never recorded twice.
 - API models are hand-written for now; switch to a client generated from `api-spec/openapi.yaml` once the
   screen set settles (`openapi-generator-cli generate -g dart-dio -i api-spec/openapi.yaml -o mobile/packages/api_client`).

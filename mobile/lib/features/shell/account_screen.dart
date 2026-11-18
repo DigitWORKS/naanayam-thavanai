@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_models.dart';
+import '../sync/payment_queue.dart';
 
 /// Signed-in user and log out. Used as the agent's "More" tab and, until business settings are
 /// built, the owner's "Settings" tab.
@@ -18,11 +19,16 @@ class AccountScreen extends ConsumerWidget {
   final List<AccountLink> links;
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    final unsent = ref.read(paymentQueueProvider).items.length;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Log out?'),
-        content: const Text('You will need your mobile number and PIN to log in again.'),
+        content: Text(unsent == 0
+            ? 'You will need your mobile number and PIN to log in again.'
+            : '$unsent ${unsent == 1 ? 'payment is' : 'payments are'} saved on this phone and not sent yet. '
+                'They stay on the phone and are sent the next time you log in here. '
+                'Connect to the internet and sync first if you can.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Log out')),

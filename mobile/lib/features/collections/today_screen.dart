@@ -8,6 +8,8 @@ import '../../core/money.dart';
 import '../../theme/app_theme.dart';
 import '../auth/auth_models.dart';
 import '../payments/record_payment_screen.dart';
+import '../sync/payment_queue.dart';
+import '../sync/sync_banner.dart';
 import 'collections_repository.dart';
 import 'due_item.dart';
 
@@ -24,7 +26,11 @@ class TodayScreen extends ConsumerStatefulWidget {
 class _TodayScreenState extends ConsumerState<TodayScreen> {
   int? _areaId;
 
-  Future<void> _refresh() => ref.refresh(dueListProvider(_areaId).future);
+  /// Sends anything saved on the phone first, so the list reflects it.
+  Future<void> _refresh() async {
+    await ref.read(paymentQueueProvider.notifier).sync();
+    await ref.refresh(dueListProvider(_areaId).future);
+  }
 
   Future<void> _collect(DueItem item) async {
     final recorded = await Navigator.of(context).push<bool>(
@@ -35,6 +41,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Keeps the offline queue alive (and syncing) for the whole session; Today is built at login.
+    ref.watch(paymentQueueProvider.select((q) => q.isEmpty));
     final due = ref.watch(dueListProvider(_areaId));
     final firstName = widget.user.name.split(' ').first;
 
@@ -66,6 +74,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 
   Widget _list(List<DueItem> items) {
+    final queue = ref.watch(paymentQueueProvider);
     // Loans still to collect first; ones settled today at the bottom.
     final ordered = [...items.where((i) => !i.isSettledToday), ...items.where((i) => i.isSettledToday)];
     // Owners see every area; agents only their assigned ones.
@@ -80,6 +89,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
+        const SyncBanner(),
         _Summary(items: items),
         if (areas.length > 1) ...[
           const SizedBox(height: 12),
@@ -102,7 +112,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             child: Text('Nothing due today.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted)),
           ),
         for (final item in ordered) ...[
-          _DueTile(item: item, onCollect: () => _collect(item)),
+          _DueTile(item: item, onCollect: () => _collect(item), savedOnPhone: queue.waitingFor(item.loanId)),
           const SizedBox(height: 8),
         ],
       ],
@@ -182,10 +192,13 @@ class _AreaChip extends StatelessWidget {
 }
 
 class _DueTile extends StatelessWidget {
-  const _DueTile({required this.item, required this.onCollect});
+  const _DueTile({required this.item, required this.onCollect, required this.savedOnPhone});
 
   final DueItem item;
   final VoidCallback onCollect;
+
+  /// Collected on this phone but not on the server yet (not in [item]'s figures).
+  final Money savedOnPhone;
 
   @override
   Widget build(BuildContext context) {
@@ -214,6 +227,10 @@ class _DueTile extends StatelessWidget {
                   ]),
                   const SizedBox(height: 4),
                   Text(subtitle, style: const TextStyle(fontSize: 13, color: AppColors.muted)),
+                  if (savedOnPhone.isPositive) ...[
+                    const SizedBox(height: 6),
+                    _Tag('${savedOnPhone.format()} saved on phone'),
+                  ],
                   if (!item.isSettledToday && (behind || item.penaltyDue.isPositive)) ...[
                     const SizedBox(height: 6),
                     Wrap(spacing: 6, runSpacing: 4, children: [

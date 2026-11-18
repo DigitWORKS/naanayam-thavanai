@@ -8,6 +8,8 @@ import '../../core/api_error.dart';
 import '../../core/money.dart';
 import '../../theme/app_theme.dart';
 import '../auth/auth_models.dart';
+import '../sync/payment_queue.dart';
+import '../sync/sync_banner.dart';
 import 'handover_repository.dart';
 
 /// Design board 11 (agent): hand today's cash to the owner. UPI is not handed over — it is already in
@@ -94,6 +96,8 @@ class _HandoverScreenState extends ConsumerState<HandoverScreen> {
   Widget build(BuildContext context) {
     final preview = ref.watch(handoverPreviewProvider);
     final firstName = widget.user.name.split(' ').first;
+    // Cash saved on the phone is not in the server's total yet; hand over only after it is sent.
+    final unsent = !ref.watch(paymentQueueProvider.select((q) => q.isEmpty));
 
     if (!_prefilled) {
       if (preview case AsyncData(:final value)) {
@@ -133,6 +137,12 @@ class _HandoverScreenState extends ConsumerState<HandoverScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
+              if (unsent && p.existing == null) ...[
+                const SyncBanner(),
+                const _Info('Payments saved on this phone are not in the total below yet. '
+                    'Send them first, then hand over.'),
+                const SizedBox(height: 12),
+              ],
               _CollectedCard(preview: p),
               const SizedBox(height: 12),
               if (p.existing != null)
@@ -153,11 +163,13 @@ class _HandoverScreenState extends ConsumerState<HandoverScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: FilledButton(
-                onPressed: _busy ? null : () => _submit(value),
+                onPressed: _busy || unsent ? null : () => _submit(value),
                 child: _busy
                     ? const SizedBox.square(
                         dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                    : Text('Hand over ${(Money.tryParse(_handed.text) ?? Money.zero).format()}'),
+                    : Text(unsent
+                        ? 'Send saved payments first'
+                        : 'Hand over ${(Money.tryParse(_handed.text) ?? Money.zero).format()}'),
               ),
             ),
           ),
