@@ -49,7 +49,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _error = null;
     });
     try {
-      await ref.read(authControllerProvider.notifier).login(PhoneField.digits(_phone), _pin.text);
+      await ref
+          .read(authControllerProvider.notifier)
+          .login(PhoneField.digits(_phone), _pin.text);
     } on ApiError catch (e) {
       if (!mounted) return;
       setState(() {
@@ -81,13 +83,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const BrandMark(),
                       const SizedBox(height: 48),
                       const FieldLabel('Mobile number'),
-                      PhoneField(controller: _phone, textInputAction: TextInputAction.next),
+                      PhoneField(
+                          controller: _phone,
+                          textInputAction: TextInputAction.next),
                       const SizedBox(height: 20),
                       const FieldLabel('PIN'),
-                      PinBoxes(controller: _pin, hasError: _error != null, onSubmitted: (_) => _submit()),
+                      PinBoxes(
+                          controller: _pin,
+                          hasError: _error != null,
+                          onSubmitted: (_) => _submit()),
                       if (_error != null) ...[
                         const SizedBox(height: 12),
-                        Text(_error!, style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+                        Text(_error!,
+                            style: const TextStyle(
+                                color: AppColors.error,
+                                fontWeight: FontWeight.w600)),
                       ],
                       const SizedBox(height: 28),
                       FilledButton(
@@ -95,7 +105,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: _busy
                             ? const SizedBox.square(
                                 dimension: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2.5, color: Colors.white))
                             : const Text('Log in'),
                       ),
                       const Spacer(),
@@ -103,25 +114,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const Text(
                         'Forgot your PIN? Ask your financier to reset it.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 14, color: AppColors.muted, height: 1.5),
+                        style: TextStyle(
+                            fontSize: 14, color: AppColors.muted, height: 1.5),
                       ),
                       const SizedBox(height: 12),
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size.fromHeight(52),
                           backgroundColor: AppColors.surface,
-                          side: const BorderSide(color: AppColors.border, width: 1.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          side: const BorderSide(
+                              color: AppColors.border, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
                         ),
                         onPressed: _busy
                             ? null
-                            : () => Navigator.of(context)
-                                .push(MaterialPageRoute<void>(builder: (_) => const RegisterScreen())),
+                            : () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                    builder: (_) => const RegisterScreen())),
                         child: const Text.rich(TextSpan(
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.ink),
+                          style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.ink),
                           children: [
                             TextSpan(text: 'Run a finance business?  '),
-                            TextSpan(text: 'Register', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.brand)),
+                            TextSpan(
+                                text: 'Register',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.brand)),
                           ],
                         )),
                       ),
@@ -129,10 +151,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.lock_outline, size: 14, color: AppColors.muted),
+                          Icon(Icons.lock_outline,
+                              size: 14, color: AppColors.muted),
                           SizedBox(width: 8),
-                          Text('DigitWorks · Secure login',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.muted)),
+                          Text('DigitWORKS · Secure login',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.muted)),
                         ],
                       ),
                     ],

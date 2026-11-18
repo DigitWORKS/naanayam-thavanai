@@ -46,6 +46,7 @@ lib/
     loans/         loan list by status, new loan with live preview, loan detail (schedule / payments), pre-close quote
     collections/   today's due list (agent home)
     payments/      record payment (cash / UPI + UTR), idempotent clientTxnId
+    settings/      owner business settings and plan card
 ```
 
 Bottom navigation: owner Home / Today / Clients / Loans / More (Reports, Settings under More); agent Today /

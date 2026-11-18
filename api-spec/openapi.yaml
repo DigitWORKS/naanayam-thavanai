@@ -1552,6 +1552,8 @@ components:
       properties:
         date: { type: string, format: date }
         businessName: { type: string, description: Tenant name for the header }
+        plan: { $ref: '#/components/schemas/Plan' }
+        planExpiry: { type: string, format: date }
         todayTarget: { $ref: '#/components/schemas/Money' }
         todayCollected: { $ref: '#/components/schemas/Money' }
         todayCash: { $ref: '#/components/schemas/Money' }

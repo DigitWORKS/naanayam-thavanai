@@ -5,6 +5,7 @@ import '../clients/clients_screen.dart';
 import '../collections/today_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../loans/loans_screen.dart';
+import '../settings/settings_screen.dart';
 import 'account_screen.dart';
 import 'coming_soon_screen.dart';
 
@@ -47,8 +48,7 @@ class _HomeShellState extends State<HomeShell> {
           AccountScreen(user: u, title: 'More', links: const [
             AccountLink('Reports', Icons.bar_chart_outlined,
                 ComingSoonScreen(title: 'Reports', note: 'Collections by day / agent / area and interest income.')),
-            AccountLink('Settings', Icons.settings_outlined,
-                ComingSoonScreen(title: 'Settings', note: 'Interest, penalty, payment order and pre-closure settings.')),
+            AccountLink('Settings', Icons.settings_outlined, SettingsScreen()),
           ]),
         ),
       ];

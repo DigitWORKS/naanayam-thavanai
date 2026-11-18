@@ -9,6 +9,8 @@ import '../../core/providers.dart';
 class DashboardSummary {
   const DashboardSummary({
     required this.businessName,
+    this.plan,
+    this.planExpiry,
     required this.todayTarget,
     required this.todayCollected,
     required this.todayCash,
@@ -20,6 +22,10 @@ class DashboardSummary {
   });
 
   final String businessName;
+
+  /// TRIAL, MONTHLY or YEARLY.
+  final String? plan;
+  final DateTime? planExpiry;
   final Money todayTarget;
   final Money todayCollected;
   final Money todayCash;
@@ -31,6 +37,8 @@ class DashboardSummary {
 
   factory DashboardSummary.fromJson(Map<String, dynamic> j) => DashboardSummary(
         businessName: (j['businessName'] as String?) ?? '',
+        plan: j['plan'] as String?,
+        planExpiry: j['planExpiry'] == null ? null : DateTime.parse(j['planExpiry'] as String),
         todayTarget: Money.fromJson(j['todayTarget']),
         todayCollected: Money.fromJson(j['todayCollected']),
         todayCash: Money.fromJson(j['todayCash']),

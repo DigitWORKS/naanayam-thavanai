@@ -43,7 +43,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _submit() async {
     if (!_form.currentState!.validate()) return;
     if (!_accepted) {
-      setState(() => _error = 'Please accept the terms of service and privacy policy.');
+      setState(() =>
+          _error = 'Please accept the terms of service and privacy policy.');
       return;
     }
     setState(() {
@@ -62,9 +63,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     } on ApiError catch (e) {
       if (!mounted) return;
       setState(() => _error = switch (e.code) {
-            'PHONE_IN_USE' => 'This mobile number is already registered. Log in instead.',
-            'TENANT_EXISTS' => 'A finance with this number is already registered.',
-            'TOO_MANY_REQUESTS' => 'Too many attempts. Please try again in an hour.',
+            'PHONE_IN_USE' =>
+              'This mobile number is already registered. Log in instead.',
+            'TENANT_EXISTS' =>
+              'A finance with this number is already registered.',
+            'TOO_MANY_REQUESTS' =>
+              'Too many attempts. Please try again in an hour.',
             _ => e.message,
           });
     } finally {
@@ -76,7 +80,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final trialEnds = DateFormat('d MMM yyyy').format(DateTime.now().add(const Duration(days: 30)));
+    final trialEnds = DateFormat('d MMM yyyy')
+        .format(DateTime.now().add(const Duration(days: 30)));
 
     return Scaffold(
       appBar: AppBar(
@@ -84,7 +89,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Register your finance', style: AppTheme.heading(20)),
           const Text('Takes 2 minutes · start with a free trial',
-              style: TextStyle(fontSize: 13, color: AppColors.muted, fontWeight: FontWeight.w500)),
+              style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.muted,
+                  fontWeight: FontWeight.w500)),
         ]),
       ),
       body: Form(
@@ -103,22 +111,32 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
               const SizedBox(height: 16),
               const FieldLabel('Money-lending licence no.'),
-              TextFormField(controller: _licence, maxLength: 50, decoration: const InputDecoration(counterText: '')),
+              TextFormField(
+                  controller: _licence,
+                  maxLength: 50,
+                  decoration: const InputDecoration(counterText: '')),
               const FieldHelp('Optional now, can be added later in Settings'),
               const SizedBox(height: 16),
-              const FieldLabel('Maximum interest rate you may charge', required: true),
+              const FieldLabel('Maximum interest rate you may charge',
+                  required: true),
               TextFormField(
                 controller: _cap,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d{0,3}\.?\d{0,2}'))],
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d{0,3}\.?\d{0,2}'))
+                ],
                 decoration: const InputDecoration(suffixText: '% per year'),
                 validator: (v) {
                   final m = Money.tryParse(v);
-                  if (m == null || !m.isPositive || m.paise > 10000) return 'Enter a rate between 0 and 100';
+                  if (m == null || !m.isPositive || m.paise > 10000)
+                    return 'Enter a rate between 0 and 100';
                   return null;
                 },
               ),
-              const FieldHelp('As allowed by your licence. The app blocks loans above this rate.'),
+              const FieldHelp(
+                  'As allowed by your licence. The app blocks loans above this rate.'),
             ]),
             const SizedBox(height: 12),
             FormSection(title: 'YOUR LOGIN', children: [
@@ -137,50 +155,72 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               const SizedBox(height: 16),
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    const FieldLabel('Create PIN', required: true),
-                    _pinField(_pin, (v) => RegExp(r'^\d{4,6}$').hasMatch(v ?? '') ? null : '4 to 6 digits'),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const FieldLabel('Create PIN', required: true),
+                        _pinField(
+                            _pin,
+                            (v) => RegExp(r'^\d{4,6}$').hasMatch(v ?? '')
+                                ? null
+                                : '4 to 6 digits'),
+                      ]),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    const FieldLabel('Confirm PIN', required: true),
-                    _pinField(_pin2, (v) => v == _pin.text ? null : 'PINs do not match'),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const FieldLabel('Confirm PIN', required: true),
+                        _pinField(_pin2,
+                            (v) => v == _pin.text ? null : 'PINs do not match'),
+                      ]),
                 ),
               ]),
               const FieldHelp('4 to 6 digits'),
             ]),
             const SizedBox(height: 12),
             FormSection(title: 'PLAN', children: [
-              const _PlanOption(name: 'Free trial', detail: 'All features for 30 days', price: '₹0', selected: true),
+              const _PlanOption(
+                  name: 'Free trial',
+                  detail: 'All features for 30 days',
+                  price: '₹0',
+                  selected: true),
               const SizedBox(height: 8),
-              const _PlanOption(name: 'Monthly', detail: 'Choose after your trial'),
+              const _PlanOption(
+                  name: 'Monthly', detail: 'Choose after your trial'),
               const SizedBox(height: 8),
-              const _PlanOption(name: 'Yearly', detail: 'Choose after your trial'),
+              const _PlanOption(
+                  name: 'Yearly', detail: 'Choose after your trial'),
               const SizedBox(height: 12),
               Row(children: [
-                const Icon(Icons.event_available, size: 16, color: AppColors.brand),
+                const Icon(Icons.event_available,
+                    size: 16, color: AppColors.brand),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text('Free until $trialEnds · pick Monthly or Yearly before it ends',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                  child: Text(
+                      'Free until $trialEnds · pick Monthly or Yearly before it ends',
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w500)),
                 ),
               ]),
             ]),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14)),
               child: CheckboxListTile(
                 value: _accepted,
-                onChanged: _busy ? null : (v) => setState(() => _accepted = v ?? false),
+                onChanged: _busy
+                    ? null
+                    : (v) => setState(() => _accepted = v ?? false),
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
                 activeColor: AppColors.brand,
                 title: const Text(
-                  'I agree to the Terms of service and Privacy policy. DigitWorks provides the software only; '
+                  'I agree to the Terms of service and Privacy policy. DigitWORKS provides the software only; '
                   'I am responsible for my money-lending licence and lending practices.',
                   style: TextStyle(fontSize: 13, height: 1.5),
                 ),
@@ -188,7 +228,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+              Text(_error!,
+                  style: const TextStyle(
+                      color: AppColors.error, fontWeight: FontWeight.w600)),
             ],
           ],
         ),
@@ -201,7 +243,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               onPressed: _busy ? null : _submit,
               child: _busy
                   ? const SizedBox.square(
-                      dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                      dimension: 22,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.5, color: Colors.white))
                   : const Text('Create account'),
             ),
             TextButton(
@@ -214,11 +258,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  Widget _pinField(TextEditingController c, FormFieldValidator<String> validator) => TextFormField(
+  Widget _pinField(
+          TextEditingController c, FormFieldValidator<String> validator) =>
+      TextFormField(
         controller: c,
         obscureText: true,
         keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(6)
+        ],
         decoration: const InputDecoration(errorMaxLines: 2),
         validator: validator,
       );
@@ -226,7 +275,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
 /// Plan row. Only the free trial is selectable during self-registration.
 class _PlanOption extends StatelessWidget {
-  const _PlanOption({required this.name, required this.detail, this.price, this.selected = false});
+  const _PlanOption(
+      {required this.name,
+      required this.detail,
+      this.price,
+      this.selected = false});
 
   final String name;
   final String detail;
@@ -240,21 +293,30 @@ class _PlanOption extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? AppColors.brandTint : AppColors.background,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? AppColors.brand : AppColors.border, width: selected ? 2 : 1),
+          border: Border.all(
+              color: selected ? AppColors.brand : AppColors.border,
+              width: selected ? 2 : 1),
         ),
         child: Row(children: [
           Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off,
               color: selected ? AppColors.brand : AppColors.border),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(name,
                   style: TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w600, color: selected ? AppColors.ink : AppColors.muted)),
-              Text(detail, style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: selected ? AppColors.ink : AppColors.muted)),
+              Text(detail,
+                  style: const TextStyle(fontSize: 12, color: AppColors.muted)),
             ]),
           ),
-          if (price != null) Text(price!, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          if (price != null)
+            Text(price!,
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
         ]),
       );
 }

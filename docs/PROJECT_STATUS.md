@@ -189,6 +189,12 @@ API clients generated from `api-spec/openapi.yaml`:
       refresh), record payment (cash / UPI + 12-digit UTR, quick amounts, idempotent `clientTxnId`, form locks
       after an unknown outcome). Money as integer paise. Owners currently land on the same Today list.
 - [x] Swagger UI "Authorize" (bearer JWT) via `common/OpenApiConfig.java`.
+- [~] Flutter slice 6 written (to verify): Settings (owner, More → Settings; design board 13) — plan card (plan,
+      expiry, days left; Upgrade explains that DigitWorks updates plans until billing exists), interest cap + allowed
+      methods, active loans per client stepper, late penalty (on/off, fixed ₹ / % of missed amount, grace days,
+      optional cap per loan, "applies from" note), payment order + where extra money goes, pre-closure (on/off,
+      rebate future interest, no charge / fixed / %), record retention read-only; unsaved-changes guard; saving
+      refreshes loan rules used by New loan / pre-closure. Backend: GET /reports/dashboard adds plan, planExpiry.
 - [~] Flutter slice 5 written (to verify): Pre-close quote (design board 12) from Loan detail — settlement amount,
       principal / interest left, unpaid penalty, rebate for future-day interest, pre-closure charge with its label
       from settings (2% / ₹x); owner picks Cash / UPI (+UTR), confirms, POST /preclose with an idempotent
@@ -219,7 +225,7 @@ API clients generated from `api-spec/openapi.yaml`:
       Today list filters by all active areas), owner dashboard (collected vs target, cash / UPI, outstanding, behind
       schedule, by-area progress, pending handovers with Confirm / Review → accept or dispute).
       Backend: `businessName` added to `GET /reports/dashboard`. Tamil / English switch waits for Tamil strings.
-- [ ] Flutter next (owner first): settings, reports, client photos; then agent handover, offline queue (drift) + `/payments/sync`; bundled fonts (Inter,
+- [ ] Flutter next (owner first): reports, client photos; then agent handover, offline queue (drift) + `/payments/sync`; bundled fonts (Inter,
       Space Grotesk, Noto Sans Tamil) instead of google_fonts runtime fetch; Tamil + English strings;
       generated API client; release INTERNET permission.
 - [ ] Angular `web/`: scaffold, generated client, owner screens, Super Admin tenant screens.

@@ -29,7 +29,9 @@ public class ReportService {
 
     public enum GroupBy { DAY, AGENT, AREA }
 
-    public record Dashboard(LocalDate date, String businessName, BigDecimal todayTarget, BigDecimal todayCollected, BigDecimal todayCash,
+    /** Owner home; {@code plan} / {@code planExpiry} also feed the plan card in Settings. */
+    public record Dashboard(LocalDate date, String businessName, String plan, LocalDate planExpiry,
+                            BigDecimal todayTarget, BigDecimal todayCollected, BigDecimal todayCash,
                             BigDecimal todayUpi, BigDecimal totalOutstanding, BigDecimal overdueAmount,
                             long overdueLoans, long activeLoans, long pendingHandovers) {
     }
@@ -90,9 +92,9 @@ public class ReportService {
         long activeLoans = ((Number) single("select count(*) from loan where tenant_id = :t and status = 'ACTIVE'",
                 Map.of("t", t))).longValue();
 
-        String businessName = (String) single("select name from tenant where id = :t", Map.of("t", t));
+        Object[] tenant = row("select name, plan, plan_expiry from tenant where id = :t", Map.of("t", t));
 
-        return new Dashboard(day, businessName, target, money(coll[0]), money(coll[1]), money(coll[2]), money(bal[0]),
+        return new Dashboard(day, (String) tenant[0], (String) tenant[1], localDate(tenant[2]), target, money(coll[0]), money(coll[1]), money(coll[2]), money(bal[0]),
                 money(bal[1]), ((Number) bal[2]).longValue(), activeLoans,
                 handovers.countByTenantIdAndStatus(t, CashHandover.Status.PENDING));
     }
@@ -230,6 +232,11 @@ public class ReportService {
         Query q = em.createNativeQuery(sql);
         params.forEach(q::setParameter);
         return q;
+    }
+
+    /** DATE columns come back from native queries as java.sql.Date or LocalDate depending on the driver. */
+    private static LocalDate localDate(Object v) {
+        return v == null ? null : v instanceof java.sql.Date d ? d.toLocalDate() : (LocalDate) v;
     }
 
     private static BigDecimal money(Object v) {
