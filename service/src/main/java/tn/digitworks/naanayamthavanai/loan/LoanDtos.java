@@ -35,9 +35,11 @@ public final class LoanDtos {
             @NotNull LocalDate startDate) {
     }
 
+    /** Loan row for lists and the client detail; client / area names let the Loans tab show who it is. */
     public record LoanSummary(Long id, String loanNo, BigDecimal principal, Frequency frequency,
                               BigDecimal installmentAmount, BigDecimal outstanding, BigDecimal overdueAmount,
-                              Loan.Status status) {
+                              Loan.Status status, Long clientId, String clientName, String areaName,
+                              BigDecimal totalPayable, LocalDate endDate) {
     }
 
     public record LoanResponse(

@@ -8,6 +8,8 @@ import '../../core/money.dart';
 import '../../theme/app_theme.dart';
 import '../auth/auth_models.dart';
 import '../handover/handover_repository.dart';
+import '../loans/loan_detail_screen.dart';
+import '../loans/new_loan_screen.dart';
 import 'dashboard_repository.dart';
 
 /// Owner home (design board 5): today's collection, portfolio, areas, handovers to confirm.
@@ -53,8 +55,18 @@ class DashboardScreen extends ConsumerWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               icon: const Icon(Icons.add, color: Colors.white),
-              onPressed: () => ScaffoldMessenger.of(context)
-                  .showSnackBar(const SnackBar(content: Text('New loan comes in the next update.'))),
+              onPressed: () async {
+                final id = await Navigator.of(context).push<int>(MaterialPageRoute(
+                  builder: (_) => NewLoanScreen(user: user),
+                  fullscreenDialog: true,
+                ));
+                ref.invalidate(dashboardProvider);
+                if (id != null && context.mounted) {
+                  await Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => LoanDetailScreen(loanId: id, user: user),
+                  ));
+                }
+              },
             ),
           ),
         ],

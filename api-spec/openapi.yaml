@@ -1353,6 +1353,11 @@ components:
         outstanding: { $ref: '#/components/schemas/Money' }
         overdueAmount: { $ref: '#/components/schemas/Money' }
         status: { $ref: '#/components/schemas/LoanStatus' }
+        clientId: { type: integer, format: int64 }
+        clientName: { type: string }
+        areaName: { type: string }
+        totalPayable: { $ref: '#/components/schemas/Money' }
+        endDate: { type: string, format: date, description: Current end date including extensions }
     Loan:
       allOf:
         - $ref: '#/components/schemas/LoanSummary'

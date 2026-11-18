@@ -11,7 +11,7 @@ import 'client_detail_screen.dart';
 import 'client_models.dart';
 import 'clients_repository.dart';
 
-/// Design board 8. Pops with the new client's id. Photos / documents are added in a follow-up.
+/// Design board 8. Pops with a [NewClientResult]. Photos / documents are added in a follow-up.
 class NewClientScreen extends ConsumerStatefulWidget {
   const NewClientScreen({super.key, required this.user});
 
@@ -53,7 +53,7 @@ class _NewClientScreenState extends ConsumerState<NewClientScreen> {
     super.dispose();
   }
 
-  Future<void> _save() async {
+  Future<void> _save({bool giveLoan = false}) async {
     setState(() => _existing = null);
     if (!_form.currentState!.validate()) return;
     if (!_consent) {
@@ -75,7 +75,7 @@ class _NewClientScreenState extends ConsumerState<NewClientScreen> {
             guarantorName: _gName.text,
             guarantorPhone: PhoneField.digits(_gPhone),
           ));
-      if (mounted) Navigator.of(context).pop(id);
+      if (mounted) Navigator.of(context).pop(NewClientResult(id, giveLoan: giveLoan));
     } on ApiError catch (e) {
       if (!mounted) return;
       setState(() {
@@ -233,17 +233,48 @@ class _NewClientScreenState extends ConsumerState<NewClientScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: FilledButton(
-            onPressed: _busy ? null : _save,
-            child: _busy
-                ? const SizedBox.square(
-                    dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                : const Text('Save'),
-          ),
+          child: Row(children: [
+            Expanded(
+              child: widget.user.isOwner
+                  ? OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(56),
+                        foregroundColor: AppColors.ink,
+                        side: const BorderSide(color: AppColors.ink, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      onPressed: _busy ? null : _save,
+                      child: const Text('Save'),
+                    )
+                  : FilledButton(onPressed: _busy ? null : _save, child: _saveLabel('Save')),
+            ),
+            // Owners usually add a client to give a loan straight away; agents cannot create loans.
+            if (widget.user.isOwner) ...[
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _busy ? null : () => _save(giveLoan: true),
+                  child: _saveLabel('Save & give loan'),
+                ),
+              ),
+            ],
+          ]),
         ),
       ),
     );
   }
+
+  Widget _saveLabel(String text) => _busy
+      ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+      : Text(text);
+}
+
+/// Result of the New client screen.
+class NewClientResult {
+  const NewClientResult(this.clientId, {this.giveLoan = false});
+
+  final int clientId;
+  final bool giveLoan;
 }
 
 class _Existing {

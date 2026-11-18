@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -9,6 +8,9 @@ import '../../theme/app_theme.dart';
 import '../auth/auth_models.dart';
 import '../collections/collections_repository.dart';
 import '../collections/due_item.dart';
+import '../loans/loan_detail_screen.dart';
+import '../loans/loans_screen.dart' show LoanCard;
+import '../loans/new_loan_screen.dart';
 import '../payments/record_payment_screen.dart';
 import 'client_models.dart';
 import 'clients_repository.dart';
@@ -41,7 +43,7 @@ class ClientDetailScreen extends ConsumerWidget {
         ),
         data: (c) => RefreshIndicator(
           onRefresh: () => ref.refresh(clientDetailProvider(clientId).future),
-          child: _Body(client: c),
+          child: _Body(client: c, user: user),
         ),
       ),
       bottomNavigationBar: switch (detail) {
@@ -105,9 +107,26 @@ class ClientDetailScreen extends ConsumerWidget {
 }
 
 class _Body extends ConsumerWidget {
-  const _Body({required this.client});
+  const _Body({required this.client, required this.user});
 
   final ClientDetail client;
+  final AppUser user;
+
+  Future<void> _openLoan(BuildContext context, WidgetRef ref, int loanId) async {
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => LoanDetailScreen(loanId: loanId, user: user),
+    ));
+    ref.invalidate(clientDetailProvider(client.id));
+  }
+
+  Future<void> _newLoan(BuildContext context, WidgetRef ref) async {
+    final id = await Navigator.of(context).push<int>(MaterialPageRoute(
+      builder: (_) => NewLoanScreen(user: user, clientId: client.id),
+      fullscreenDialog: true,
+    ));
+    ref.invalidate(clientDetailProvider(client.id));
+    if (id != null && context.mounted) await _openLoan(context, ref, id);
+  }
 
   Future<void> _launch(BuildContext context, Uri uri) async {
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -174,6 +193,15 @@ class _Body extends ConsumerWidget {
               Text('${c.totalOutstanding.format()} outstanding',
                   style: const TextStyle(fontSize: 13, color: AppColors.muted, fontWeight: FontWeight.w500)),
           ]),
+          if (user.isOwner && c.isActive)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => _newLoan(context, ref),
+                icon: const Icon(Icons.add),
+                label: const Text('New loan'),
+              ),
+            ),
           const SizedBox(height: 10),
           if (c.activeLoans.isEmpty)
             Container(
@@ -182,7 +210,7 @@ class _Body extends ConsumerWidget {
               child: const Text('No active loan.', style: TextStyle(color: AppColors.muted)),
             ),
           for (final l in c.activeLoans) ...[
-            _LoanCard(loan: l),
+            LoanCard(loan: l, onTap: () => _openLoan(context, ref, l.id)),
             const SizedBox(height: 8),
           ],
           const SizedBox(height: 12),
@@ -233,45 +261,4 @@ class _Body extends ConsumerWidget {
           Expanded(child: Text(value ?? '—', style: const TextStyle(fontWeight: FontWeight.w500))),
         ]),
       );
-}
-
-class _LoanCard extends StatelessWidget {
-  const _LoanCard({required this.loan});
-
-  final LoanSummary loan;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = loan;
-    final behind = l.overdueAmount.isPositive;
-    final freq = l.frequency == Frequency.daily ? 'Daily' : 'Weekly';
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(14)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Expanded(
-            child: Text('${l.loanNo} · ${l.principal.format()}',
-                style: GoogleFonts.spaceGrotesk(fontSize: 15, fontWeight: FontWeight.w700)),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: behind ? AppColors.warningTint : AppColors.brandTint,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              behind ? '${l.overdueAmount.format()} behind' : 'On track',
-              style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w600, color: behind ? AppColors.warning : AppColors.brand),
-            ),
-          ),
-        ]),
-        const SizedBox(height: 8),
-        Text('$freq ${l.installmentAmount.format()} · ${l.outstanding.format()} left',
-            style: const TextStyle(fontSize: 13, color: AppColors.muted)),
-      ]),
-    );
-  }
 }

@@ -1,4 +1,7 @@
 import '../../core/money.dart';
+import '../loans/loan_models.dart';
+
+export '../loans/loan_models.dart' show Frequency, FrequencyText, LoanSummary;
 
 enum ClientFilter {
   all('ALL'),
@@ -60,39 +63,6 @@ class ClientPage {
       totalElements: (meta['totalElements'] as num).toInt(),
     );
   }
-}
-
-enum Frequency { daily, weekly }
-
-/// Active loan as shown on the client detail (API: LoanSummary).
-class LoanSummary {
-  const LoanSummary({
-    required this.id,
-    required this.loanNo,
-    required this.principal,
-    required this.frequency,
-    required this.installmentAmount,
-    required this.outstanding,
-    required this.overdueAmount,
-  });
-
-  final int id;
-  final String loanNo;
-  final Money principal;
-  final Frequency frequency;
-  final Money installmentAmount;
-  final Money outstanding;
-  final Money overdueAmount;
-
-  factory LoanSummary.fromJson(Map<String, dynamic> j) => LoanSummary(
-        id: (j['id'] as num).toInt(),
-        loanNo: j['loanNo'] as String,
-        principal: Money.fromJson(j['principal']),
-        frequency: Frequency.values.byName((j['frequency'] as String).toLowerCase()),
-        installmentAmount: Money.fromJson(j['installmentAmount']),
-        outstanding: Money.fromJson(j['outstanding']),
-        overdueAmount: Money.fromJson(j['overdueAmount']),
-      );
 }
 
 /// GET /clients/{id}.

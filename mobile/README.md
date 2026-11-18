@@ -43,6 +43,7 @@ lib/
     clients/       client list (search, Behind / No active loan / area filters), new client, client detail
     dashboard/     owner home
     handover/      cash handovers (owner confirm / dispute)
+    loans/         loan list by status, new loan with live preview, loan detail (schedule / payments)
     collections/   today's due list (agent home)
     payments/      record payment (cash / UPI + UTR), idempotent clientTxnId
 ```

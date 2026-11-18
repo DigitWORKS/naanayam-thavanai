@@ -4,6 +4,7 @@ import '../auth/auth_models.dart';
 import '../clients/clients_screen.dart';
 import '../collections/today_screen.dart';
 import '../dashboard/dashboard_screen.dart';
+import '../loans/loans_screen.dart';
 import 'account_screen.dart';
 import 'coming_soon_screen.dart';
 
@@ -38,8 +39,7 @@ class _HomeShellState extends State<HomeShell> {
         _Tab('Home', Icons.home_outlined, Icons.home, DashboardScreen(user: u)),
         _Tab('Today', Icons.today_outlined, Icons.today, TodayScreen(user: u)),
         _Tab('Clients', Icons.people_alt_outlined, Icons.people_alt, ClientsScreen(user: u)),
-        const _Tab('Loans', Icons.receipt_long_outlined, Icons.receipt_long,
-            ComingSoonScreen(title: 'Loans', note: 'Loan list, new loan and loan details come next.')),
+        _Tab('Loans', Icons.receipt_long_outlined, Icons.receipt_long, LoansScreen(user: u)),
         _Tab(
           'More',
           Icons.more_horiz,

@@ -189,7 +189,16 @@ API clients generated from `api-spec/openapi.yaml`:
       refresh), record payment (cash / UPI + 12-digit UTR, quick amounts, idempotent `clientTxnId`, form locks
       after an unknown outcome). Money as integer paise. Owners currently land on the same Today list.
 - [x] Swagger UI "Authorize" (bearer JWT) via `common/OpenApiConfig.java`.
-- [~] Flutter slice 3 written (to verify): Clients tab for owners and agents — list with search, filter chips
+- [~] Flutter slice 4 written (to verify): Loans tab (owner) — list by status (Active / Closed / Pre-closed /
+      Defaulted) with client, progress, "₹x behind", end date; New loan (client picker or pre-selected, principal,
+      rate checked against the cap from GET /settings, Daily / Weekly + tenure, Flat / Reducing limited to allowed
+      methods, added to dues / deduct upfront, start date ±30 days, live POST /loans/preview card, confirm dialog);
+      Loan detail (outstanding, N of M paid, progress, behind / penalty banner, terms grid, ends with +extensions,
+      Schedule with Today / Due / Overdue / Missed / Extension and older paid rows collapsed, Payments ledger
+      with reversals, Collect via today's due list). Entry points: dashboard "+", client detail "New loan" +
+      loan cards, New client "Save & give loan" (owner). Backend: LoanSummary now has clientId, clientName,
+      areaName, totalPayable, endDate (names batched per call). Pre-close quote button is a placeholder.
+- [x] Flutter slice 3, verified: Clients tab for owners and agents — list with search, filter chips
       (All / Behind / No active loan) and area chips, outstanding + "₹x behind" per client, Load more paging;
       New client (area from owner's active areas or agent's assigned areas, Aadhaar last 4 only, guarantor,
       bilingual consent, 409 CLIENT_EXISTS shown inline with "Open client"); Client detail (call / WhatsApp,
@@ -197,7 +206,7 @@ API clients generated from `api-spec/openapi.yaml`:
       for 2 loans). Backend: `GET /clients` rows now carry activeLoans / outstanding / overdueAmount (batched per
       page) and a `filter` param (ALL / BEHIND / NO_ACTIVE_LOAN; BEHIND matches LoanBalances.arrears).
       Deferred: client photos / document upload (needs image_picker + platform permissions), edit client,
-      "Save & give loan" (with New loan), loan progress bar (needs total payable in LoanSummary).
+      "Save & give loan" and loan progress bar (both done in slice 4).
 - [x] Flutter slice 2, verified on the emulator: login matched to design (+91 field, PIN boxes,
       Register link, footer), register screen (free trial), role-based bottom navigation (owner Home / Today /
       Clients / Loans / More, with Reports + Settings under More since owners also collect and manage clients;
@@ -205,8 +214,7 @@ API clients generated from `api-spec/openapi.yaml`:
       Today list filters by all active areas), owner dashboard (collected vs target, cash / UPI, outstanding, behind
       schedule, by-area progress, pending handovers with Confirm / Review → accept or dispute).
       Backend: `businessName` added to `GET /reports/dashboard`. Tamil / English switch waits for Tamil strings.
-- [ ] Flutter next (owner first): loans list + new loan + loan detail, client photos, settings, reports,
-      pre-closure; then agent handover, offline queue (drift) + `/payments/sync`; bundled fonts (Inter,
+- [ ] Flutter next (owner first): pre-closure quote, settings, reports, client photos; then agent handover, offline queue (drift) + `/payments/sync`; bundled fonts (Inter,
       Space Grotesk, Noto Sans Tamil) instead of google_fonts runtime fetch; Tamil + English strings;
       generated API client; release INTERNET permission.
 - [ ] Angular `web/`: scaffold, generated client, owner screens, Super Admin tenant screens.

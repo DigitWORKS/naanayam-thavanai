@@ -11,6 +11,8 @@ import '../collections/collections_repository.dart';
 import 'client_detail_screen.dart';
 import 'client_models.dart';
 import 'clients_repository.dart';
+import '../loans/loan_detail_screen.dart';
+import '../loans/new_loan_screen.dart';
 import 'new_client_screen.dart';
 
 /// Design board 7: client search with filters; shared by owners (all areas) and agents (their areas).
@@ -105,16 +107,27 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
   }
 
   Future<void> _newClient() async {
-    final id = await Navigator.of(context).push<int>(MaterialPageRoute(
+    final result = await Navigator.of(context).push<NewClientResult>(MaterialPageRoute(
       builder: (_) => NewClientScreen(user: widget.user),
       fullscreenDialog: true,
     ));
     if (!mounted) return;
-    if (id != null) {
-      await _openClient(id);
-    } else {
-      _reload();
+    if (result == null) return _reload();
+    if (result.giveLoan) {
+      final loanId = await Navigator.of(context).push<int>(MaterialPageRoute(
+        builder: (_) => NewLoanScreen(user: widget.user, clientId: result.clientId),
+        fullscreenDialog: true,
+      ));
+      if (!mounted) return;
+      if (loanId != null) {
+        await Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => LoanDetailScreen(loanId: loanId, user: widget.user),
+        ));
+        if (mounted) _reload();
+        return;
+      }
     }
+    await _openClient(result.clientId);
   }
 
   @override

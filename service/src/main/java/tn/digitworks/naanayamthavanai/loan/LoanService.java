@@ -1,5 +1,7 @@
 package tn.digitworks.naanayamthavanai.loan;
 
+import tn.digitworks.naanayamthavanai.area.Area;
+import tn.digitworks.naanayamthavanai.area.AreaRepository;
 import tn.digitworks.naanayamthavanai.client.Client;
 import tn.digitworks.naanayamthavanai.client.ClientRepository;
 import tn.digitworks.naanayamthavanai.common.ApiException;
@@ -39,6 +41,7 @@ public class LoanService {
     private final LoanRepository loans;
     private final InstallmentRepository installments;
     private final ClientRepository clients;
+    private final AreaRepository areas;
     private final TenantRepository tenants;
     private final PaymentRepository payments;
     private final SettingsService settingsService;
@@ -47,11 +50,12 @@ public class LoanService {
     private final ScheduleCalculator calculator = new ScheduleCalculator();
 
     public LoanService(LoanRepository loans, InstallmentRepository installments, ClientRepository clients,
-                       TenantRepository tenants, PaymentRepository payments, SettingsService settingsService,
-                       AreaScope areaScope, Clock clock) {
+                       AreaRepository areas, TenantRepository tenants, PaymentRepository payments,
+                       SettingsService settingsService, AreaScope areaScope, Clock clock) {
         this.loans = loans;
         this.installments = installments;
         this.clients = clients;
+        this.areas = areas;
         this.tenants = tenants;
         this.payments = payments;
         this.settingsService = settingsService;
@@ -85,8 +89,9 @@ public class LoanService {
         Page<Loan> result = loans.search(tenantId, clientId, status, areaId, scope.all(), scope.areaIds(),
                 PageRequest.of(page, size));
         Map<Long, List<Installment>> byLoan = installmentsByLoan(result.getContent());
+        Map<Long, ClientNames> names = clientNames(result.getContent());
         LocalDate today = LocalDate.now(clock);
-        return PageResponse.of(result, l -> toSummary(l, byLoan.getOrDefault(l.getId(), List.of()), today));
+        return PageResponse.of(result, l -> toSummary(l, byLoan.getOrDefault(l.getId(), List.of()), today, names));
     }
 
     @Transactional(readOnly = true)
@@ -101,8 +106,9 @@ public class LoanService {
     public List<LoanSummary> activeSummaries(long tenantId, long clientId) {
         List<Loan> active = loans.findByTenantIdAndClientIdAndStatusOrderByIdDesc(tenantId, clientId, Loan.Status.ACTIVE);
         Map<Long, List<Installment>> byLoan = installmentsByLoan(active);
+        Map<Long, ClientNames> names = clientNames(active);
         LocalDate today = LocalDate.now(clock);
-        return active.stream().map(l -> toSummary(l, byLoan.getOrDefault(l.getId(), List.of()), today)).toList();
+        return active.stream().map(l -> toSummary(l, byLoan.getOrDefault(l.getId(), List.of()), today, names)).toList();
     }
 
     /** Active-loan summaries for a page of clients (client list), grouped by client id. */
@@ -113,9 +119,11 @@ public class LoanService {
         }
         List<Loan> active = loans.findByTenantIdAndClientIdInAndStatusOrderByIdDesc(tenantId, clientIds, Loan.Status.ACTIVE);
         Map<Long, List<Installment>> byLoan = installmentsByLoan(active);
+        Map<Long, ClientNames> names = clientNames(active);
         LocalDate today = LocalDate.now(clock);
         return active.stream().collect(Collectors.groupingBy(Loan::getClientId,
-                Collectors.mapping(l -> toSummary(l, byLoan.getOrDefault(l.getId(), List.of()), today), Collectors.toList())));
+                Collectors.mapping(l -> toSummary(l, byLoan.getOrDefault(l.getId(), List.of()), today, names),
+                        Collectors.toList())));
     }
 
     // ---------------------------------------------------------------- commands
@@ -202,10 +210,28 @@ public class LoanService {
         areaScope.require(client.getAreaId(), "Loan");
     }
 
-    public LoanSummary toSummary(Loan l, List<Installment> rows, LocalDate today) {
+    public LoanSummary toSummary(Loan l, List<Installment> rows, LocalDate today, Map<Long, ClientNames> names) {
         LoanBalances b = LoanBalances.of(rows, today);
+        ClientNames n = names.getOrDefault(l.getClientId(), ClientNames.UNKNOWN);
         return new LoanSummary(l.getId(), l.getLoanNo(), l.getPrincipal(), l.getFrequency(), l.getInstallmentAmount(),
-                b.outstanding(), b.arrears(), l.getStatus());
+                b.outstanding(), b.arrears(), l.getStatus(), l.getClientId(), n.client(), n.area(),
+                l.getTotalPayable(), l.getCurrentEndDate());
+    }
+
+    /** Client and area name for each client of the given loans, in two batched lookups. */
+    private Map<Long, ClientNames> clientNames(Collection<Loan> rows) {
+        if (rows.isEmpty()) {
+            return Map.of();
+        }
+        List<Client> owners = clients.findAllById(rows.stream().map(Loan::getClientId).collect(Collectors.toSet()));
+        Map<Long, String> areaNames = areas.findAllById(owners.stream().map(Client::getAreaId).collect(Collectors.toSet()))
+                .stream().collect(Collectors.toMap(Area::getId, Area::getName));
+        return owners.stream().collect(Collectors.toMap(Client::getId,
+                c -> new ClientNames(c.getName(), areaNames.getOrDefault(c.getAreaId(), ""))));
+    }
+
+    public record ClientNames(String client, String area) {
+        static final ClientNames UNKNOWN = new ClientNames("", "");
     }
 
     private LoanResponse toResponse(Loan l, Client client, List<Installment> rows) {
