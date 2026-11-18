@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_error.dart';
 import '../../core/providers.dart';
+import '../../core/money.dart';
 import 'loan_models.dart';
 
 final loansRepositoryProvider = Provider<LoansRepository>((ref) => LoansRepository(ref));
@@ -12,6 +13,10 @@ final loanDetailProvider = FutureProvider.autoDispose.family<LoanDetail, int>((r
 
 final loanScheduleProvider = FutureProvider.autoDispose.family<List<Installment>, int>((ref, id) {
   return ref.watch(loansRepositoryProvider).installments(id);
+});
+
+final preclosureQuoteProvider = FutureProvider.autoDispose.family<PreclosureQuote, int>((ref, id) {
+  return ref.watch(loansRepositoryProvider).preclosureQuote(id);
 });
 
 final loanLedgerProvider = FutureProvider.autoDispose.family<List<LedgerEntry>, int>((ref, id) {
@@ -60,6 +65,31 @@ class LoansRepository {
   Future<LoanPreview> preview(LoanInput input) => ApiError.guard(() async {
         final res = await _ref.read(apiClientProvider).post<Map<String, dynamic>>('/loans/preview', data: input.toJson());
         return LoanPreview.fromJson(res.data!);
+      });
+
+  Future<PreclosureQuote> preclosureQuote(int id) => ApiError.guard(() async {
+        final res = await _ref.read(apiClientProvider).get<Map<String, dynamic>>('/loans/$id/preclosure-quote');
+        return PreclosureQuote.fromJson(res.data!);
+      });
+
+  /// Owner only: closes the loan. [settlementAmount] must equal the server's figure at [paidOn],
+  /// otherwise 409 QUOTE_OUTDATED (details.settlementAmount has the new amount).
+  Future<void> preclose(
+    int id, {
+    required String clientTxnId,
+    required Money settlementAmount,
+    required bool upi,
+    String? upiRefNo,
+    required DateTime paidOn,
+  }) =>
+      ApiError.guard(() async {
+        await _ref.read(apiClientProvider).post<Map<String, dynamic>>('/loans/$id/preclose', data: {
+          'clientTxnId': clientTxnId,
+          'settlementAmount': settlementAmount.toApi(),
+          'mode': upi ? 'UPI' : 'CASH',
+          if (upi) 'upiRefNo': upiRefNo,
+          'paidOn': paidOn.toUtc().toIso8601String(),
+        });
       });
 
   /// Owner only. Returns the new loan's id.

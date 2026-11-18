@@ -189,7 +189,12 @@ API clients generated from `api-spec/openapi.yaml`:
       refresh), record payment (cash / UPI + 12-digit UTR, quick amounts, idempotent `clientTxnId`, form locks
       after an unknown outcome). Money as integer paise. Owners currently land on the same Today list.
 - [x] Swagger UI "Authorize" (bearer JWT) via `common/OpenApiConfig.java`.
-- [~] Flutter slice 4 written (to verify): Loans tab (owner) — list by status (Active / Closed / Pre-closed /
+- [~] Flutter slice 5 written (to verify): Pre-close quote (design board 12) from Loan detail — settlement amount,
+      principal / interest left, unpaid penalty, rebate for future-day interest, pre-closure charge with its label
+      from settings (2% / ₹x); owner picks Cash / UPI (+UTR), confirms, POST /preclose with an idempotent
+      clientTxnId (form locks on unknown outcome); 409 QUOTE_OUTDATED shows the new amount and reloads the quote.
+      Agents see the quote read-only. No backend change.
+- [~] Flutter slice 4 written (owner testing in progress): Loans tab (owner) — list by status (Active / Closed / Pre-closed /
       Defaulted) with client, progress, "₹x behind", end date; New loan (client picker or pre-selected, principal,
       rate checked against the cap from GET /settings, Daily / Weekly + tenure, Flat / Reducing limited to allowed
       methods, added to dues / deduct upfront, start date ±30 days, live POST /loans/preview card, confirm dialog);
@@ -214,7 +219,7 @@ API clients generated from `api-spec/openapi.yaml`:
       Today list filters by all active areas), owner dashboard (collected vs target, cash / UPI, outstanding, behind
       schedule, by-area progress, pending handovers with Confirm / Review → accept or dispute).
       Backend: `businessName` added to `GET /reports/dashboard`. Tamil / English switch waits for Tamil strings.
-- [ ] Flutter next (owner first): pre-closure quote, settings, reports, client photos; then agent handover, offline queue (drift) + `/payments/sync`; bundled fonts (Inter,
+- [ ] Flutter next (owner first): settings, reports, client photos; then agent handover, offline queue (drift) + `/payments/sync`; bundled fonts (Inter,
       Space Grotesk, Noto Sans Tamil) instead of google_fonts runtime fetch; Tamil + English strings;
       generated API client; release INTERNET permission.
 - [ ] Angular `web/`: scaffold, generated client, owner screens, Super Admin tenant screens.

@@ -12,6 +12,7 @@ import '../collections/collections_repository.dart';
 import '../payments/record_payment_screen.dart';
 import 'loan_models.dart';
 import 'loans_repository.dart';
+import 'preclosure_screen.dart';
 
 /// Design board 4: balances, schedule and payments for one loan.
 class LoanDetailScreen extends ConsumerStatefulWidget {
@@ -55,6 +56,17 @@ class _LoanDetailScreenState extends ConsumerState<LoanDetailScreen> {
       }
     } on ApiError catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
+  Future<void> _preclose(LoanDetail loan) async {
+    final closed = await Navigator.of(context).push<bool>(MaterialPageRoute(
+      builder: (_) => PreclosureScreen(loan: loan, user: widget.user),
+    ));
+    if (closed == true) {
+      ref.invalidate(dueListProvider);
+      ref.invalidate(clientDetailProvider(loan.clientId));
+      await _refresh();
     }
   }
 
@@ -120,8 +132,7 @@ class _LoanDetailScreenState extends ConsumerState<LoanDetailScreen> {
                       side: const BorderSide(color: AppColors.ink, width: 1.5),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Pre-close quote comes in the next update.'))),
+                    onPressed: () => _preclose(value),
                     child: const Text('Pre-close quote'),
                   ),
                 ),

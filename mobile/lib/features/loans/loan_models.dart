@@ -264,13 +264,30 @@ class LedgerEntry {
       );
 }
 
-/// GET /settings — only what loan entry needs.
+enum ChargeType { none, fixed, percent }
+
+/// GET /settings — what loan entry and pre-closure need.
 class LoanRules {
-  const LoanRules({required this.maxInterestRate, required this.allowedMethods, required this.maxActiveLoansPerClient});
+  const LoanRules({
+    required this.maxInterestRate,
+    required this.allowedMethods,
+    required this.maxActiveLoansPerClient,
+    this.preclosureChargeType = ChargeType.none,
+    this.preclosureChargeValue = Money.zero,
+  });
 
   final Money maxInterestRate;
   final Set<InterestMethod> allowedMethods;
   final int maxActiveLoansPerClient;
+  final ChargeType preclosureChargeType;
+  final Money preclosureChargeValue;
+
+  /// "2%", "₹100" or null when there is no charge.
+  String? get preclosureChargeLabel => switch (preclosureChargeType) {
+        ChargeType.percent => '${preclosureChargeValue.toInput()}%',
+        ChargeType.fixed => preclosureChargeValue.format(),
+        ChargeType.none => null,
+      };
 
   factory LoanRules.fromJson(Map<String, dynamic> j) => LoanRules(
         maxInterestRate: Money.fromJson(j['maxInterestRate']),
@@ -278,6 +295,10 @@ class LoanRules {
             .map((m) => _fromApi(InterestMethod.values, m as String))
             .toSet(),
         maxActiveLoansPerClient: ((j['maxActiveLoansPerClient'] as num?) ?? 2).toInt(),
+        preclosureChargeType: j['preclosureChargeType'] == null
+            ? ChargeType.none
+            : _fromApi(ChargeType.values, j['preclosureChargeType'] as String),
+        preclosureChargeValue: Money.fromJson(j['preclosureChargeValue']),
       );
 }
 
@@ -349,4 +370,37 @@ class LoanPreview {
       lastInstallment: rows.isEmpty ? Money.zero : Money.fromJson((rows.last as Map)['dueAmount']),
     );
   }
+}
+
+/// GET /loans/{id}/preclosure-quote.
+class PreclosureQuote {
+  const PreclosureQuote({
+    required this.asOf,
+    required this.outstandingPrincipal,
+    required this.outstandingInterest,
+    required this.pendingPenalty,
+    required this.interestRebate,
+    required this.preclosureCharge,
+    required this.settlementAmount,
+  });
+
+  final DateTime asOf;
+  final Money outstandingPrincipal;
+  final Money outstandingInterest;
+  final Money pendingPenalty;
+
+  /// Interest for future days that is not charged (shown as a deduction).
+  final Money interestRebate;
+  final Money preclosureCharge;
+  final Money settlementAmount;
+
+  factory PreclosureQuote.fromJson(Map<String, dynamic> j) => PreclosureQuote(
+        asOf: _date(j['asOf']),
+        outstandingPrincipal: Money.fromJson(j['outstandingPrincipal']),
+        outstandingInterest: Money.fromJson(j['outstandingInterest']),
+        pendingPenalty: Money.fromJson(j['pendingPenalty']),
+        interestRebate: Money.fromJson(j['interestRebate']),
+        preclosureCharge: Money.fromJson(j['preclosureCharge']),
+        settlementAmount: Money.fromJson(j['settlementAmount']),
+      );
 }
