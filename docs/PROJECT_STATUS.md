@@ -255,9 +255,18 @@ API clients generated from `api-spec/openapi.yaml`:
       dialog, then opens the new loan. Fixed across all web pages: resource value() throws in the error state
       (Angular 21), so not-found / error views crashed instead of showing — now safeValue() everywhere
       (core/resource.ts, with a spec). CLAUDE.md: stack rows for mobile / web, Web conventions section.
-- [ ] Web next: pages — cash handovers, agents & areas, settings, reports, Super Admin financiers;
+- [~] Web slice 5 written (to verify): Cash handovers (board "Web cash handovers") — tabs To confirm (with
+      the menu count) / Confirmed / Disputed, Agent, date range (To confirm: all dates; others default to
+      this month), all in the URL (?status=&agent=&from=&to=&h=); rows date, agent, cash collected, handed,
+      Matches / ₹x short / extra; month totals (cash received = confirmed handed, short, disputed). Side panel:
+      agent · areas, cash collected (n payments), handed, short / extra, agent's note, owner's note, the cash
+      payments of that day (time, client · loan linking to the loan, reversals in red, total; warns if entries
+      changed after the handover), remarks, Accept ₹x / Dispute (needs a note). Refreshes list, totals and
+      menu badge. Backend: GET /cash-handovers/{id}/payments (owner; agent only own) — the agent's CASH
+      entries of that day, the same rows as expectedAmount. Spec 50 operations.
+- [ ] Web next: pages — agents & areas, settings, reports, Super Admin financiers;
       with their API gaps (area client counts and agents; admin search and expiring soon; owner PIN reset;
-      agent's day cash list; income export).
+      income export).
 - [ ] Tamil version: no separate design; done in code (Flutter ARB / Angular i18n) after the web app and the
       remaining functionality are complete. Noto Sans Tamil is already in both designs.
 - [x] API gaps found while designing: `409 CLIENT_EXISTS` now returns `details` {clientId, name, areaId,

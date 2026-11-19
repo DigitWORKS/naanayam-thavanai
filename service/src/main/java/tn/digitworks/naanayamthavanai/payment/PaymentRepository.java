@@ -45,6 +45,21 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             """)
     BigDecimal sumByCollector(Long tenantId, Long agentId, Payment.Mode mode, LocalDateTime from, LocalDateTime to);
 
+    /**
+     * An agent's entries of one mode in [from, to) with loan no. and client name, oldest first:
+     * [paymentId, loanId, loanNo, clientName, amount, entryType, paidOn, remarks]. Same rows as sumByCollector.
+     */
+    @Query("""
+            select p.id, p.loanId, l.loanNo, c.name, p.amount, p.entryType, p.paidOn, p.remarks
+            from Payment p, Loan l, Client c
+            where l.id = p.loanId and c.id = l.clientId
+              and p.tenantId = :tenantId and p.collectedBy = :agentId and p.mode = :mode
+              and p.paidOn >= :from and p.paidOn < :to
+            order by p.paidOn, p.id
+            """)
+    List<Object[]> entriesByCollector(Long tenantId, Long agentId, Payment.Mode mode, LocalDateTime from,
+                                      LocalDateTime to);
+
     /** [count, max(paidOn)] of an agent's PAYMENT entries (not reversals) of one mode in [from, to). */
     @Query("""
             select count(p), max(p.paidOn) from Payment p

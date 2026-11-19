@@ -56,7 +56,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/loans/loans').then((m) => m.LoansPage),
         title: 'Loans · Naanayam Thavanai',
       },
-      ownerPage('handovers', 'Cash handovers'),
+      {
+        path: 'handovers',
+        loadComponent: () => import('./features/handovers/handovers').then((m) => m.HandoversPage),
+        title: 'Cash handovers · Naanayam Thavanai',
+      },
       ownerPage('reports', 'Reports'),
       ownerPage('agents', 'Agents & areas'),
       ownerPage('settings', 'Settings'),

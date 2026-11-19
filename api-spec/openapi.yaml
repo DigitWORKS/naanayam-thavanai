@@ -873,7 +873,7 @@ paths:
 
   /cash-handovers/preview:
     get:
-      tags: [Cash handover]
+      tags: [CashHandover]
       summary: Agent's cash and UPI totals for a day before handing over
       parameters:
         - name: date
@@ -886,6 +886,38 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/HandoverPreview' }
+
+  /cash-handovers/{handoverId}/payments:
+    get:
+      tags: [CashHandover]
+      summary: The agent's cash entries behind a handover
+      description: >
+        The agent's CASH payments and reversals on the handover date, oldest first — the same rows that make up
+        expectedAmount. Agents may read only their own handovers (others: 404).
+      parameters:
+        - name: handoverId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Entries; reversals have a negative amount
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    paymentId: { type: integer, format: int64 }
+                    loanId: { type: integer, format: int64 }
+                    loanNo: { type: string }
+                    clientName: { type: string }
+                    amount: { $ref: '#/components/schemas/Money' }
+                    entryType: { type: string, enum: [PAYMENT, REVERSAL] }
+                    paidOn: { type: string, format: date-time }
+                    remarks: { type: string, nullable: true }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /cash-handovers/{handoverId}/confirm:
     parameters:

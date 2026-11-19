@@ -54,6 +54,12 @@ public class CashHandoverController {
         return service.submit(in);
     }
 
+    @GetMapping("/{handoverId}/payments")
+    @PreAuthorize("hasAnyRole('OWNER','AGENT')")
+    public List<CashHandoverService.HandoverPayment> payments(@PathVariable long handoverId) {
+        return service.payments(handoverId);
+    }
+
     @PostMapping("/{handoverId}/confirm")
     @PreAuthorize("hasRole('OWNER')")
     public HandoverResponse decide(@PathVariable long handoverId, @Valid @RequestBody HandoverDecision in) {

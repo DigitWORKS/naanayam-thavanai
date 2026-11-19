@@ -1,0 +1,89 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--nt-surface);
+  border-radius: var(--nt-radius-card);
+  padding: 20px;
+}
+
+p { margin: 0; }
+.muted { color: var(--nt-muted); }
+.strong { font-weight: 600; }
+.small { font: 500 12px var(--nt-font); }
+.warn { color: var(--nt-warning); }
+.ok { color: var(--nt-brand); }
+.stack { display: flex; flex-direction: column; gap: 2px; }
+.grow { flex: 1; min-width: 0; }
+.opt { font: 500 12px var(--nt-font); color: var(--nt-muted); }
+
+.head { display: flex; align-items: flex-start; gap: 10px; h2 { font: 700 20px var(--nt-font-display); } }
+
+.close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--nt-muted);
+  cursor: pointer;
+  &:hover { background: var(--nt-bg); color: var(--nt-ink); }
+}
+
+.lines {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+  margin: 0;
+  font: 500 14px var(--nt-font);
+  dt { color: var(--nt-muted); }
+  dd { margin: 0; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .total { padding-top: 8px; border-top: 1px solid var(--nt-divider); font-weight: 700; }
+  dt.total.warn { color: var(--nt-warning); }
+}
+
+.note {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--nt-bg);
+  font-size: 14px;
+  span { display: block; font: 600 12px var(--nt-font); color: var(--nt-muted); margin-bottom: 2px; }
+  &.owner { background: var(--nt-brand-tint); }
+}
+
+.pays {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  > .nt-link-btn { align-self: flex-start; }
+
+  ul { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow-y: auto; }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-top: 1px solid #eef2f0;
+    font: 500 13px var(--nt-font);
+    &.rev { color: var(--nt-error); .who { color: var(--nt-error); } }
+  }
+
+  .time { width: 64px; flex: none; font-size: 12px; }
+  .who { color: var(--nt-ink); text-decoration: none; &:hover { color: var(--nt-brand); } }
+  .amt { font-weight: 600; font-variant-numeric: tabular-nums; }
+}
+
+.pays-head { display: flex; justify-content: space-between; align-items: center; }
+.pays-total {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--nt-divider);
+  font: 700 13px var(--nt-font);
+}
+
+.nt-field { gap: 6px; input { height: 46px; font-size: 15px; } }
+.wide { width: 100%; }

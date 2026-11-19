@@ -1,0 +1,77 @@
+@let v = view();
+<div class="head">
+  <div class="stack grow">
+    <span class="muted small">{{ v.pending ? 'Review' : v.statusText }} · {{ v.date }}</span>
+    <h2>{{ v.title }}</h2>
+  </div>
+  <button type="button" class="close" aria-label="Close" (click)="closed.emit()">×</button>
+</div>
+
+<dl class="lines">
+  <dt>{{ v.collectedLabel }}</dt><dd>{{ v.expected }}</dd>
+  <dt>Handed over</dt><dd>{{ v.handed }}</dd>
+  <dt class="total" [class.warn]="v.diffWarn">{{ v.diffLabel }}</dt>
+  <dd class="total" [class.warn]="v.diffWarn" [class.ok]="!v.diffWarn">{{ v.diff }}</dd>
+</dl>
+
+@if (v.agentNote) {
+  <p class="note"><span>{{ v.firstName }}'s note</span>“{{ v.agentNote }}”</p>
+}
+@if (v.ownerNote) {
+  <p class="note owner"><span>Your note</span>“{{ v.ownerNote }}”</p>
+}
+@if (!v.pending && v.decidedAt) {
+  <p class="muted small">{{ v.statusText }} {{ v.decidedAt }}</p>
+}
+
+<div class="pays">
+  @if (!showPayments()) {
+    <button type="button" class="nt-link-btn" (click)="showPayments.set(true)">
+      See {{ v.firstName }}'s cash payments →
+    </button>
+  } @else {
+    <div class="pays-head">
+      <span class="strong">Cash payments</span>
+      <button type="button" class="nt-link-btn" (click)="showPayments.set(false)">Hide</button>
+    </div>
+    @if (paymentsError()) {
+      <p class="muted small">Could not load. <button type="button" class="nt-link-btn" (click)="retryPayments()">Retry</button></p>
+    } @else if (paymentsLoading()) {
+      <p class="muted small">Loading…</p>
+    } @else {
+      <ul>
+        @for (p of payments().rows; track p.id) {
+          <li [class.rev]="p.reversal">
+            <span class="time muted">{{ p.time }}</span>
+            <a class="grow who" [routerLink]="['/loans', p.loanId]">{{ p.who }}@if (p.reversal) { <span class="small"> · reversed</span>}</a>
+            <span class="amt">{{ p.amount }}</span>
+          </li>
+        } @empty {
+          <li class="muted small">No cash payments on this day.</li>
+        }
+      </ul>
+      @if (payments().rows.length) {
+        <div class="pays-total"><span>Total</span><span>{{ payments().total }}</span></div>
+      }
+      @if (payments().differs) {
+        <p class="warn small">Entries changed after this handover was made, so the total is not the cash collected above.</p>
+      }
+    }
+  }
+</div>
+
+@if (v.pending) {
+  <div class="nt-field">
+    <label for="hp-remarks">Your remarks <span class="opt">{{ v.diffWarn ? '(needed to dispute)' : '(optional)' }}</span></label>
+    <input id="hp-remarks" maxlength="255" autocomplete="off" [value]="remarks()"
+           (input)="remarks.set($any($event.target).value)" />
+    <span class="opt">{{ v.firstName }} sees this note in the app.</span>
+  </div>
+  @if (error()) { <p class="nt-error-text small" role="alert">{{ error() }}</p> }
+  <button type="button" class="nt-btn wide" [disabled]="!!busy()" (click)="decide('CONFIRMED')">
+    {{ busy() === 'CONFIRMED' ? 'Saving…' : 'Accept ' + v.handed }}
+  </button>
+  <button type="button" class="nt-btn nt-btn--danger-text wide" [disabled]="!!busy()" (click)="decide('DISPUTED')">
+    {{ busy() === 'DISPUTED' ? 'Saving…' : 'Dispute' }}
+  </button>
+}

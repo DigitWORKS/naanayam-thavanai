@@ -1,6 +1,7 @@
 package tn.digitworks.naanayamthavanai.handover;
 
 import tn.digitworks.naanayamthavanai.common.ApiException;
+import tn.digitworks.naanayamthavanai.common.AppConfig;
 import tn.digitworks.naanayamthavanai.payment.Payment;
 import tn.digitworks.naanayamthavanai.payment.PaymentRepository;
 import tn.digitworks.naanayamthavanai.security.CurrentUser;
@@ -44,6 +45,11 @@ public class CashHandoverService {
                                   BigDecimal upiCollected, HandoverResponse existing) {
     }
 
+    /** One cash entry behind a handover's expected amount; reversals are negative. */
+    public record HandoverPayment(Long paymentId, Long loanId, String loanNo, String clientName, BigDecimal amount,
+                                  Payment.EntryType entryType, java.time.OffsetDateTime paidOn, String remarks) {
+    }
+
     public record HandoverDecision(@NotNull CashHandover.Status status, @Size(max = 255) String remarks) {
     }
 
@@ -68,6 +74,27 @@ public class CashHandoverService {
         List<CashHandover> list = handovers.search(me.requireTenant(), agent, status, from, to);
         Map<Long, String> names = names(list.stream().map(CashHandover::getAgentId).collect(Collectors.toSet()));
         return list.stream().map(h -> toResponse(h, names.get(h.getAgentId()))).toList();
+    }
+
+    /**
+     * The agent's cash entries of the handover's day — the rows that add up to expectedAmount (computed the
+     * same way, so the list matches unless entries changed after the handover). Agents: only their own.
+     */
+    @Transactional(readOnly = true)
+    public List<HandoverPayment> payments(long handoverId) {
+        CurrentUser me = CurrentUser.get();
+        long tenantId = me.requireTenant();
+        CashHandover h = handovers.findByIdAndTenantId(handoverId, tenantId)
+                .filter(x -> !me.isAgent() || x.getAgentId().equals(me.userId()))
+                .orElseThrow(() -> ApiException.notFound("Handover"));
+        LocalDate day = h.getHandoverDate();
+        return payments.entriesByCollector(tenantId, h.getAgentId(), Payment.Mode.CASH, day.atStartOfDay(),
+                        day.plusDays(1).atStartOfDay()).stream()
+                .map(r -> new HandoverPayment(((Number) r[0]).longValue(), ((Number) r[1]).longValue(),
+                        (String) r[2], (String) r[3], (BigDecimal) r[4], (Payment.EntryType) r[5],
+                        ((java.time.LocalDateTime) r[6]).atZone(AppConfig.BUSINESS_ZONE).toOffsetDateTime(),
+                        (String) r[7]))
+                .toList();
     }
 
     /** Agent only: today's (or {@code date}'s) cash and UPI totals before handing over. */

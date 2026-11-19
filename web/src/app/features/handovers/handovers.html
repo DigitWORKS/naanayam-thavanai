@@ -1,0 +1,89 @@
+<header class="top">
+  <h1>Cash handovers</h1>
+  <span class="muted">Agents hand over the day's cash; UPI goes straight to your account and is not part of a handover.</span>
+</header>
+
+<section class="list">
+  <div class="filters">
+    <div role="tablist" aria-label="Status" class="tabs">
+      @for (t of tabs; track t.id) {
+        <button type="button" role="tab" [attr.aria-selected]="t.id === status()" [class.on]="t.id === status()"
+                (click)="pickTab(t.id)">
+          {{ t.label }}@if (t.id === 'PENDING' && pendingCount()) { <span class="badge">{{ pendingCount() }}</span>}
+        </button>
+      }
+    </div>
+    <label>
+      <span class="visually-hidden">Agent</span>
+      <select class="nt-select" (change)="setAgent($any($event.target).value)">
+        <option value="" [selected]="agent() === null">Agent: All</option>
+        @for (a of agents(); track a.id) {
+          <option [value]="a.id" [selected]="a.id === agent()">{{ a.name }}{{ a.isActive ? '' : ' (inactive)' }}</option>
+        }
+      </select>
+    </label>
+    <div class="dates">
+      <label><span class="visually-hidden">From</span>
+        <input type="date" class="nt-select" [max]="today" [value]="range().from" (change)="setFrom($any($event.target).value)" />
+      </label>
+      <span class="muted">–</span>
+      <label><span class="visually-hidden">To</span>
+        <input type="date" class="nt-select" [max]="today" [value]="range().to" (change)="setTo($any($event.target).value)" />
+      </label>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Date</th>
+          <th scope="col">Agent</th>
+          <th scope="col" class="num">Cash collected</th>
+          <th scope="col" class="num">Handed over</th>
+          <th scope="col">Difference</th>
+          <th scope="col"><span class="visually-hidden">Action</span></th>
+        </tr>
+      </thead>
+      <tbody [class.stale]="loading() && rows().length">
+        @for (r of rows(); track r.source.id) {
+          <tr [class.selected]="r.selected" (click)="open(r.source.id)">
+            <td class="nowrap">{{ r.date }}</td>
+            <td class="strong">{{ r.agent }}</td>
+            <td class="num">{{ r.expected }}</td>
+            <td class="num strong">{{ r.handed }}</td>
+            <td [class]="r.diffClass">{{ r.diff }}</td>
+            <td class="action">
+              <button type="button" class="nt-link-btn" (click)="$event.stopPropagation(); open(r.source.id)">
+                {{ status() === 'PENDING' ? (r.matches ? 'Confirm' : 'Review') : 'View' }}
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="empty">
+            @if (error()) {
+              <span class="nt-error-text">{{ error() }}</span>
+              <button type="button" class="nt-link-btn" (click)="retry()">Retry</button>
+            } @else if (loading()) { Loading… } @else { {{ emptyText() }} }
+          </td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (monthStats(); as s) {
+    <div class="stats">
+      <div class="stat"><span class="muted small">Cash received this month</span><span class="value">{{ s.received }}</span></div>
+      <div class="stat"><span class="muted small">Short this month</span><span class="value" [class.warn]="s.hasShort">{{ s.short }}</span></div>
+      <div class="stat"><span class="muted small">Disputed</span><span class="value">{{ s.disputed }}</span></div>
+    </div>
+  }
+</section>
+
+@if (selected(); as h) {
+  <nt-handover-panel class="panel" [handover]="h" [agent]="agentForSelected()" (decided)="onDecided()" (closed)="close()" />
+} @else {
+  <aside class="panel empty-panel">
+    <p class="muted">Pick a handover to see the cash behind it and confirm or dispute it.</p>
+  </aside>
+}
