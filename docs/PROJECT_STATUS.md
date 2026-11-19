@@ -7,7 +7,7 @@ Last updated: 2026-11-14
 ### Build order
 | # | Step | Status |
 |---|---|---|
-| 1 | API spec + DB schema | ✅ Done (spec 49 operations, migrations V1–V9) |
+| 1 | API spec + DB schema | ✅ Done (spec 53 operations, migrations V1–V10) |
 | 2 | Backend core logic (schedule, allocation, missed days, pre-closure) | ✅ Done, unit tested |
 | 3 | Backend: entities, repositories, services, controllers | ✅ Done |
 | 4 | First run on local MySQL | ✅ Done 2026-11-14: Flyway V1–V6 applied, Hibernate validation passed, Super Admin created |
@@ -116,6 +116,7 @@ API clients generated from `api-spec/openapi.yaml`:
 - `V7`: index `payment (tenant_id, upi_ref_no)` for the duplicate UTR check (not unique, see decisions).
 - `V8`: `tenant.plan` (TRIAL/MONTHLY/YEARLY) and `tenant.terms_accepted_at`.
 - `V9`: `cash_handover.owner_remarks` — the owner's note on confirm / dispute; `remarks` stays the agent's note.
+- `V10`: `app_user.token_version` — bumped on deactivation and on a new PIN; tokens carry it (claim `tv`, absent = 0).
 
 ### Backend (`service/`)
 - Pure logic + tests (62 unit tests, all passing):
@@ -264,8 +265,33 @@ API clients generated from `api-spec/openapi.yaml`:
       changed after the handover), remarks, Accept ₹x / Dispute (needs a note). Refreshes list, totals and
       menu badge. Backend: GET /cash-handovers/{id}/payments (owner; agent only own) — the agent's CASH
       entries of that day, the same rows as expectedAmount. Spec 50 operations.
-- [ ] Web next: pages — agents & areas, settings, reports, Super Admin financiers;
-      with their API gaps (area client counts and agents; admin search and expiring soon; owner PIN reset;
+- [~] Web slice 6 written (to verify): Agents & areas (board "Web agents & areas") — agents table (name, phone,
+      last login, area pills, collected this month from the collections report by agent, Active / Inactive)
+      with Areas (checkbox dialog, PUT /users/{id}/areas), New PIN (entered twice), Deactivate, Reactivate;
+      areas grid (active clients, agents; inactive ones dimmed) with Add area and Rename; Add agent form
+      (name, +91 mobile, first PIN, areas — at least one).
+      Security fix (backend): deactivating a user or setting a new PIN now signs them out everywhere. Before,
+      a deactivated agent's access token kept working for up to 12 h and a PIN reset left the old phone
+      signed in for up to 30 days (refresh token). V10 token_version, claim "tv" in both tokens, checked on
+      refresh and on every request (TokenState: one primary-key lookup per request; TokenStateTest). Tokens
+      issued before V10 count as version 0, so deploying signs nobody out.
+      Backend: GET /areas/overview (owner) — every area with active client count and active agents. Spec 51.
+      Known (mobile): payments queued offline stay on the phone after sign-out and upload under whoever logs
+      in next on that phone; should be tied to the user who recorded them.
+- [~] Web slice 7 written (to verify): Settings (board "Web settings") — plan card (plan, ends, days left;
+      business, owner, licence, records kept; Upgrade disabled until payments exist); Interest & loans (cap,
+      allowed methods, active loans per client stepper); Late penalty (on/off, fixed ₹ / %, value, grace days,
+      max per loan, "applies to days missed from …"); How payments are applied (clear first, extra money
+      goes to); Pre-closure (allowed, no interest for future days, no charge / fixed / %); Save with
+      "Unsaved changes" + Discard, leave-page and close-tab warnings. Your PIN: current + new twice; other
+      devices signed out, this browser keeps going (new tokens stored).
+      Backend: GET /settings/tenant (owner's business, licence, plan); POST /auth/change-pin (any role;
+      wrong PIN = 422 WRONG_PIN, not 401; signs out other devices via token version; returns new tokens).
+      Security fix: login had no attempt limit (a 4-digit PIN is 10,000 guesses) — now 10 per mobile number
+      per 15 min, change-PIN 5 per user per 15 min, 429 TOO_MANY_ATTEMPTS (in memory, per server instance).
+      Spec 53 operations. Mobile can use change-pin later (its Settings has no PIN change yet).
+- [ ] Web next: pages — reports, Super Admin financiers;
+      with their API gaps (admin search and expiring soon;
       income export).
 - [ ] Tamil version: no separate design; done in code (Flutter ARB / Angular i18n) after the web app and the
       remaining functionality are complete. Noto Sans Tamil is already in both designs.

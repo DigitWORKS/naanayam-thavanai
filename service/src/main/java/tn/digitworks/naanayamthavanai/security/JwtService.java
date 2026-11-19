@@ -25,6 +25,8 @@ public class JwtService {
     public static final String CLAIM_TENANT = "tenantId";
     public static final String CLAIM_ROLE = "role";
     public static final String CLAIM_TYPE = "typ";
+    /** AppUser.tokenVersion at issue time; absent in tokens issued before V10 (= 0). */
+    public static final String CLAIM_TOKEN_VERSION = "tv";
     public static final String TYPE_ACCESS = "access";
     public static final String TYPE_REFRESH = "refresh";
     private static final String ISSUER = "naanayam-thavanai";
@@ -57,17 +59,27 @@ public class JwtService {
                 accessTtl.toSeconds());
     }
 
-    /** Validates a refresh token and returns the user id it was issued for. */
-    public long userIdFromRefreshToken(String token) {
+    /** The user and token version a refresh token was issued for. */
+    public record RefreshClaims(long userId, int tokenVersion) {
+    }
+
+    /** Validates a refresh token's signature, expiry and type. */
+    public RefreshClaims readRefreshToken(String token) {
         try {
             Jwt jwt = refreshDecoder.decode(token);
             if (!TYPE_REFRESH.equals(jwt.getClaimAsString(CLAIM_TYPE))) {
                 throw invalid();
             }
-            return Long.parseLong(jwt.getSubject());
+            return new RefreshClaims(Long.parseLong(jwt.getSubject()), tokenVersion(jwt));
         } catch (JwtException | NumberFormatException e) {
             throw invalid();
         }
+    }
+
+    /** The token's "tv" claim; 0 when absent (issued before V10). */
+    public static int tokenVersion(Jwt jwt) {
+        Object v = jwt.getClaim(CLAIM_TOKEN_VERSION);
+        return v instanceof Number n ? n.intValue() : 0;
     }
 
     private String encode(AppUser user, String type, Duration ttl) {
@@ -78,7 +90,8 @@ public class JwtService {
                 .issuedAt(now)
                 .expiresAt(now.plus(ttl))
                 .claim(CLAIM_ROLE, user.getRole().name())
-                .claim(CLAIM_TYPE, type);
+                .claim(CLAIM_TYPE, type)
+                .claim(CLAIM_TOKEN_VERSION, user.getTokenVersion());
         if (user.getTenantId() != null) {
             claims.claim(CLAIM_TENANT, user.getTenantId());
         }

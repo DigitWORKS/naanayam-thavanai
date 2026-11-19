@@ -40,6 +40,10 @@ public class AppUser {
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
+    /** Bumped to sign the user out everywhere (see JwtService / TokenState). */
+    @Column(name = "token_version", nullable = false)
+    private int tokenVersion;
+
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
@@ -75,6 +79,10 @@ public class AppUser {
     public Role getRole() { return role; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+    public int getTokenVersion() { return tokenVersion; }
+
+    /** Invalidates every token issued so far (deactivation, new PIN). */
+    public void revokeTokens() { this.tokenVersion++; }
     public LocalDateTime getLastLoginAt() { return lastLoginAt; }
     public void setLastLoginAt(LocalDateTime lastLoginAt) { this.lastLoginAt = lastLoginAt; }
 }

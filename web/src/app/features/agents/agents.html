@@ -1,0 +1,184 @@
+<header class="top">
+  <h1>Agents &amp; areas</h1>
+  <span class="muted">Agents collect only in the areas you assign. They log in to the mobile app with their mobile number and PIN.</span>
+</header>
+
+<div class="main">
+  <section class="card">
+    <div class="head">
+      <h2>Agents</h2>
+      <span class="muted small">{{ agentCountText() }}</span>
+    </div>
+    @if (rowError()) { <p class="nt-error-text small" role="alert">{{ rowError() }}</p> }
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Agent</th>
+            <th scope="col">Areas</th>
+            <th scope="col" class="num">This month</th>
+            <th scope="col">Status</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of agents(); track a.source.id) {
+            <tr [class.inactive]="!a.source.isActive">
+              <td><span class="strong">{{ a.source.name }}</span><br /><span class="small muted">{{ a.phone }} · {{ a.lastLogin }}</span></td>
+              <td>
+                @if (a.source.isActive && a.areas.length) {
+                  <span class="pills">@for (n of a.areas; track n) { <span class="pill">{{ n }}</span> }</span>
+                } @else { <span class="muted">—</span> }
+              </td>
+              <td class="num strong">{{ a.month }}</td>
+              <td><span class="nt-tag" [class.nt-tag--ok]="a.source.isActive">{{ a.source.isActive ? 'Active' : 'Inactive' }}</span></td>
+              <td class="actions">
+                @if (a.source.isActive) {
+                  <button type="button" class="nt-link-btn" (click)="open({ kind: 'areas', agent: a.source })">Areas</button> ·
+                  <button type="button" class="nt-link-btn" (click)="open({ kind: 'pin', agent: a.source })">New PIN</button> ·
+                  <button type="button" class="nt-link-btn nt-link-btn--danger" (click)="open({ kind: 'deactivate', agent: a.source })">Deactivate</button>
+                } @else {
+                  <button type="button" class="nt-link-btn" [disabled]="reactivating() === a.source.id" (click)="reactivate(a.source)">
+                    {{ reactivating() === a.source.id ? 'Reactivating…' : 'Reactivate' }}
+                  </button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="empty">
+              @if (agentsError()) {
+                <span class="nt-error-text">{{ agentsError() }}</span>
+                <button type="button" class="nt-link-btn" (click)="retry()">Retry</button>
+              } @else if (agentsLoading()) { Loading… } @else { No agents yet. Add one on the right. }
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="head">
+      <h2>Areas</h2>
+      <form class="add-area" (submit)="$event.preventDefault(); addArea()">
+        <label class="visually-hidden" for="ag-area">New area name</label>
+        <input id="ag-area" maxlength="100" autocomplete="off" placeholder="New area name, e.g. Selaiyur"
+               [value]="newArea()" (input)="newArea.set($any($event.target).value)" />
+        <button type="submit" class="nt-btn btn-sm" [disabled]="areaBusy() || !newArea().trim()">
+          {{ areaBusy() ? 'Adding…' : 'Add area' }}
+        </button>
+      </form>
+    </div>
+    @if (areaError()) { <p class="nt-error-text small" role="alert">{{ areaError() }}</p> }
+    @if (areasError()) {
+      <p class="muted small">{{ areasError() }} <button type="button" class="nt-link-btn" (click)="retry()">Retry</button></p>
+    }
+    <div class="areas">
+      @for (a of areas(); track a.source.id) {
+        <div class="area" [class.inactive]="!a.source.isActive">
+          <div class="area-top">
+            <span class="strong">{{ a.source.name }}@if (!a.source.isActive) { <span class="nt-tag">Inactive</span>}</span>
+            <button type="button" class="nt-link-btn" (click)="open({ kind: 'rename', area: a.source })">Rename</button>
+          </div>
+          <span class="muted small">{{ a.line }}</span>
+        </div>
+      } @empty {
+        @if (!areasError()) { <p class="muted small">No areas yet. Add your first area above.</p> }
+      }
+    </div>
+  </section>
+</div>
+
+<aside class="card add-agent">
+  <h2>Add agent</h2>
+  <form novalidate (submit)="$event.preventDefault(); addAgent()">
+    <div class="nt-field">
+      <label for="ag-name">Name</label>
+      <input id="ag-name" maxlength="100" autocomplete="off" [value]="name()" (input)="name.set($any($event.target).value)"
+             [attr.aria-invalid]="!!shown()['name']" />
+      @if (shown()['name']; as e) { <span class="err">{{ e }}</span> }
+    </div>
+    <div class="nt-field">
+      <label for="ag-phone">Mobile number</label>
+      <div class="phone"><span>+91</span>
+        <input id="ag-phone" inputmode="numeric" autocomplete="off" maxlength="14" [value]="phone()"
+               (input)="phone.set($any($event.target).value)" [attr.aria-invalid]="!!shown()['phone']" />
+      </div>
+      @if (shown()['phone']; as e) { <span class="err">{{ e }}</span> } @else { <span class="hint">The agent logs in with this number</span> }
+    </div>
+    <div class="nt-field">
+      <label for="ag-pin">First PIN</label>
+      <input id="ag-pin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" [value]="pin()"
+             (input)="pin.set($any($event.target).value)" [attr.aria-invalid]="!!shown()['pin']" />
+      @if (shown()['pin']; as e) { <span class="err">{{ e }}</span> } @else { <span class="hint">4–6 digits. Share it with the agent in person.</span> }
+    </div>
+    <fieldset class="checks">
+      <legend>Areas</legend>
+      @for (a of activeAreas(); track a.id) {
+        <label><input type="checkbox" [checked]="pickedAreas().includes(a.id)"
+                      (change)="toggleArea(a.id, $any($event.target).checked)" /> {{ a.name }}</label>
+      } @empty {
+        <span class="hint">Add an area first.</span>
+      }
+      @if (shown()['areas']; as e) { <span class="err">{{ e }}</span> }
+    </fieldset>
+    @if (addError()) { <p class="nt-error-text small" role="alert">{{ addError() }}</p> }
+    @if (added()) { <p class="ok small" role="status">{{ added() }}</p> }
+    <button type="submit" class="nt-btn wide" [disabled]="addBusy()">{{ addBusy() ? 'Adding…' : 'Add agent' }}</button>
+  </form>
+</aside>
+
+@if (action(); as a) {
+  <nt-dialog [heading]="dialogHeading(a)" [busy]="dlgBusy()" (closed)="action.set(null)">
+    <form class="dlg" novalidate (submit)="$event.preventDefault(); runAction()">
+      @switch (a.kind) {
+        @case ('areas') {
+          <fieldset class="checks">
+            <legend class="visually-hidden">Areas</legend>
+            @for (x of dlgAreaOptions(); track x.id) {
+              <label><input type="checkbox" [checked]="dlgAreas().includes(x.id)"
+                            (change)="toggleDlgArea(x.id, $any($event.target).checked)" /> {{ x.name }}@if (!x.isActive) { (inactive)}</label>
+            }
+          </fieldset>
+          <p class="hint">They see clients and collections only in these areas.</p>
+        }
+        @case ('pin') {
+          <p class="warn-box">This signs {{ a.agent.name }}'s phone out. They log in again with the new PIN.</p>
+          <div class="nt-field">
+            <label for="dlg-pin">New PIN</label>
+            <input id="dlg-pin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6"
+                   [value]="dlgPin()" (input)="dlgPin.set($any($event.target).value)" />
+          </div>
+          <div class="nt-field">
+            <label for="dlg-pin2">Enter it again</label>
+            <input id="dlg-pin2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6"
+                   [value]="dlgPin2()" (input)="dlgPin2.set($any($event.target).value)" />
+          </div>
+          <p class="hint">Share it with {{ a.agent.name }} in person, not by SMS.</p>
+        }
+        @case ('deactivate') {
+          <p class="warn-box">This signs {{ a.agent.name }} out and stops them logging in. Their payments and handovers stay; you can reactivate them later.</p>
+          <p class="hint">Payments still waiting on their phone (recorded offline) are not uploaded while they are inactive.</p>
+        }
+        @case ('rename') {
+          <div class="nt-field">
+            <label for="dlg-name">Area name</label>
+            <input id="dlg-name" maxlength="100" autocomplete="off" [value]="dlgName()" (input)="dlgName.set($any($event.target).value)" />
+          </div>
+        }
+      }
+      @if (dlgError()) { <p class="nt-error-text small" role="alert">{{ dlgError() }}</p> }
+      <div class="dlg-actions">
+        <button type="button" class="nt-btn nt-btn--outline" [disabled]="dlgBusy()" (click)="dialog()?.close()">Cancel</button>
+        <button type="submit" class="nt-btn" [class.danger]="a.kind === 'deactivate'" [disabled]="dlgBusy()">
+          @switch (a.kind) {
+            @case ('areas') { {{ dlgBusy() ? 'Saving…' : 'Save areas' }} }
+            @case ('pin') { {{ dlgBusy() ? 'Saving…' : 'Set PIN' }} }
+            @case ('deactivate') { {{ dlgBusy() ? 'Saving…' : 'Deactivate' }} }
+            @case ('rename') { {{ dlgBusy() ? 'Saving…' : 'Rename' }} }
+          }
+        </button>
+      </div>
+    </form>
+  </nt-dialog>
+}

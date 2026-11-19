@@ -74,6 +74,18 @@ export class AuthService {
     }
   }
 
+  /**
+   * Changes the signed-in user's PIN. The server signs out every other device and returns new tokens for
+   * this one, which are kept so the session continues. Errors (WRONG_PIN, TOO_MANY_ATTEMPTS) are rethrown.
+   */
+  async changePin(currentPin: string, newPin: string): Promise<void> {
+    const tokens = await firstValueFrom(
+      this.http.post<TokenResponse>(`${API}/auth/change-pin`, { currentPin, newPin }),
+    );
+    this.store.save(tokens);
+    this._user.set(tokens.user);
+  }
+
   logout(reason?: 'expired'): void {
     this.store.clear();
     this._user.set(null);

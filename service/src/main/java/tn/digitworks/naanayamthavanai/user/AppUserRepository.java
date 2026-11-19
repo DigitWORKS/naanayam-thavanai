@@ -1,6 +1,7 @@
 package tn.digitworks.naanayamthavanai.user;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
@@ -21,4 +22,8 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     List<AppUser> findByTenantIdAndRoleOrderByName(Long tenantId, Role role);
 
     List<AppUser> findByIdIn(Collection<Long> ids);
+
+    /** [active, tokenVersion] of a user (per-request token check); empty if the user does not exist. */
+    @Query("select u.active, u.tokenVersion from AppUser u where u.id = :id")
+    List<Object[]> tokenState(Long id);
 }

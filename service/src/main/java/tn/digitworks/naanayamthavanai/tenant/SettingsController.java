@@ -25,6 +25,13 @@ public class SettingsController {
         return service.get();
     }
 
+    /** The owner's own business: name, owner, licence, plan (read-only here; Super Admin changes plan / licence). */
+    @GetMapping("/tenant")
+    @PreAuthorize("hasRole('OWNER')")
+    public TenantDtos.TenantResponse tenant() {
+        return service.tenant();
+    }
+
     @PutMapping
     @PreAuthorize("hasRole('OWNER')")
     public SettingsDto update(@Valid @RequestBody SettingsDto in) {

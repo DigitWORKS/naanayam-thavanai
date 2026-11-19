@@ -1,5 +1,7 @@
 package tn.digitworks.naanayamthavanai.area;
 
+import java.util.List;
+
 import jakarta.validation.constraints.Size;
 
 public final class AreaDtos {
@@ -11,6 +13,13 @@ public final class AreaDtos {
         public static AreaResponse of(Area a) {
             return new AreaResponse(a.getId(), a.getName(), a.isActive());
         }
+    }
+
+    /** Owner's Agents & areas page: active clients and active agents per area. */
+    public record AreaOverview(Long id, String name, boolean isActive, long clientCount, List<AgentRef> agents) {
+    }
+
+    public record AgentRef(Long id, String name) {
     }
 
     /** Create: name required. Patch: any field. */

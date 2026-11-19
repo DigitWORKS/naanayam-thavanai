@@ -1,0 +1,157 @@
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 18px;
+}
+
+p { margin: 0; }
+h2 { font: 700 17px var(--nt-font-display); }
+.muted { color: var(--nt-muted); }
+.strong { font-weight: 600; }
+.small { font: 500 12px var(--nt-font); }
+.ok { color: var(--nt-brand); font-weight: 600; }
+.err { font: 600 12px var(--nt-font); color: var(--nt-error); }
+.hint { font: 500 12px var(--nt-font); color: var(--nt-muted); }
+
+.top {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  h1 { font: 700 28px var(--nt-font-display); }
+  .muted { font: 500 14px var(--nt-font); }
+}
+
+.main {
+  flex: 999 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: var(--nt-surface);
+  border-radius: var(--nt-radius-card);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+
+.scroll { overflow-x: auto; margin: 0 -20px; }
+
+table { width: 100%; min-width: 620px; border-collapse: collapse; font: 500 14px var(--nt-font); }
+th { padding: 10px 8px; text-align: left; font: 600 12px var(--nt-font); color: var(--nt-muted); background: #fafbfa; }
+td { padding: 12px 8px; border-top: 1px solid #eef2f0; vertical-align: middle; }
+th:first-child, td:first-child { padding-left: 20px; }
+th:last-child, td:last-child { padding-right: 20px; }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.inactive td { color: var(--nt-muted); }
+.actions { white-space: nowrap; color: var(--nt-muted); }
+.empty { padding: 28px 16px; text-align: center; color: var(--nt-muted); button { margin-left: 8px; } }
+
+.pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.pill {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--nt-bg);
+  font: 600 12px var(--nt-font);
+  color: var(--nt-ink);
+}
+
+.add-area {
+  display: flex;
+  gap: 8px;
+  input {
+    height: 38px;
+    width: 260px;
+    max-width: 50vw;
+    padding: 0 12px;
+    border: 1.5px solid var(--nt-border);
+    border-radius: 10px;
+    font: 500 14px var(--nt-font);
+    outline: none;
+    &:focus { border-color: var(--nt-brand); }
+  }
+}
+
+.btn-sm { height: 38px; padding: 0 14px; border-radius: 10px; font-size: 13px; }
+
+.areas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.area {
+  border: 1px solid var(--nt-divider);
+  border-radius: var(--nt-radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  &.inactive { opacity: 0.6; }
+  .nt-tag { margin-left: 6px; font-size: 11px; padding: 1px 6px; }
+}
+
+.area-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+
+// ---------------------------------------------------------------- add agent
+
+.add-agent {
+  flex: 1 1 300px;
+  max-width: 360px;
+  align-self: flex-start;
+
+  form { display: flex; flex-direction: column; gap: 14px; }
+}
+
+@media (max-width: 1000px) {
+  .add-agent { max-width: none; }
+}
+
+.nt-field { gap: 6px; input { height: 46px; font-size: 15px; } }
+
+.phone {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  &:focus-within { border-color: var(--nt-brand); }
+  span { padding: 0 10px 0 14px; color: var(--nt-muted); font-weight: 600; }
+  input { flex: 1; min-width: 0; border: 0; height: 44px; padding: 0 12px 0 0; outline: none; }
+}
+
+.checks {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  legend { font: 600 14px var(--nt-font); margin-bottom: 6px; padding: 0; }
+  label { display: flex; align-items: center; gap: 8px; font: 500 14px var(--nt-font); cursor: pointer; }
+  input { width: 18px; height: 18px; margin: 0; accent-color: var(--nt-brand); }
+}
+
+.wide { width: 100%; }
+
+// ---------------------------------------------------------------- dialog
+
+.dlg { display: flex; flex-direction: column; gap: 14px; }
+
+.warn-box {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--nt-warning-tint);
+  color: var(--nt-warning);
+  font: 600 13px var(--nt-font);
+}
+
+.dlg-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.danger { background: var(--nt-error); &:hover { background: #8c1d17; } }

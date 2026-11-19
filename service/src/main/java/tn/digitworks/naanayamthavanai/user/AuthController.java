@@ -2,6 +2,8 @@ package tn.digitworks.naanayamthavanai.user;
 
 import tn.digitworks.naanayamthavanai.common.ApiException;
 import tn.digitworks.naanayamthavanai.common.RateLimiter;
+import tn.digitworks.naanayamthavanai.security.CurrentUser;
+import tn.digitworks.naanayamthavanai.user.UserDtos.ChangePinRequest;
 import tn.digitworks.naanayamthavanai.user.UserDtos.LoginRequest;
 import tn.digitworks.naanayamthavanai.user.UserDtos.RefreshRequest;
 import tn.digitworks.naanayamthavanai.user.UserDtos.RegisterRequest;
@@ -35,9 +37,33 @@ public class AuthController {
         this.registrationsPerHour = registrationsPerHour;
     }
 
+    /**
+     * At most {@value #LOGIN_ATTEMPTS} attempts per mobile number per 15 minutes: a 4-digit PIN has only
+     * 10,000 values. In memory, per server instance.
+     */
     @PostMapping("/login")
     public TokenResponse login(@Valid @RequestBody LoginRequest in) {
+        if (!rateLimiter.tryAcquire("login:" + in.phone(), LOGIN_ATTEMPTS, Duration.ofMinutes(15))) {
+            throw tooMany();
+        }
         return service.login(in.phone(), in.pin());
+    }
+
+    /** Signed-in user (any role) changes their own PIN; other devices are signed out. */
+    @PostMapping("/change-pin")
+    public TokenResponse changePin(@Valid @RequestBody ChangePinRequest in) {
+        if (!rateLimiter.tryAcquire("pin:" + CurrentUser.get().userId(), PIN_CHANGE_ATTEMPTS, Duration.ofMinutes(15))) {
+            throw tooMany();
+        }
+        return service.changePin(in.currentPin(), in.newPin());
+    }
+
+    static final int LOGIN_ATTEMPTS = 10;
+    static final int PIN_CHANGE_ATTEMPTS = 5;
+
+    private static ApiException tooMany() {
+        return new ApiException(HttpStatus.TOO_MANY_REQUESTS, "TOO_MANY_ATTEMPTS",
+                "Too many PIN attempts. Wait 15 minutes and try again.");
     }
 
     /** Public: a financier registers and gets signed in as OWNER on a free trial. */

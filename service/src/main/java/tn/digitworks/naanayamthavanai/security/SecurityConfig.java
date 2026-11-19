@@ -81,15 +81,16 @@ public class SecurityConfig {
         return NimbusJwtEncoder.withSecretKey(jwtKey).build();
     }
 
-    /** For API calls: rejects refresh tokens. */
+    /** For API calls: rejects refresh tokens, and tokens of deactivated users or revoked by a new PIN. */
     @Bean
     @Primary
-    JwtDecoder accessTokenDecoder(SecretKey jwtKey) {
+    JwtDecoder accessTokenDecoder(SecretKey jwtKey, TokenState tokenState) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(jwtKey).macAlgorithm(MacAlgorithm.HS256).build();
         OAuth2TokenValidator<Jwt> accessOnly = jwt -> JwtService.TYPE_ACCESS.equals(jwt.getClaimAsString(JwtService.CLAIM_TYPE))
                 ? OAuth2TokenValidatorResult.success()
                 : OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "Not an access token", null));
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefault(), accessOnly));
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefault(), accessOnly,
+                tokenState));
         return decoder;
     }
 

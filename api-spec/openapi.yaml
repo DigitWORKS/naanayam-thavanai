@@ -35,6 +35,7 @@ paths:
     post:
       tags: [Auth]
       summary: Login with phone + PIN
+      description: At most 10 attempts per mobile number per 15 minutes (429 TOO_MANY_ATTEMPTS).
       security: []
       requestBody:
         required: true
@@ -48,6 +49,41 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/TokenResponse' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '429':
+          description: TOO_MANY_ATTEMPTS
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/change-pin:
+    post:
+      tags: [Auth]
+      summary: Change your own PIN (any role)
+      description: >
+        Checks the current PIN, sets the new one, signs out every other device and returns fresh tokens for
+        this one. A wrong current PIN is 422 WRONG_PIN (not 401). At most 5 attempts per 15 minutes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPin, newPin]
+              properties:
+                currentPin: { type: string, pattern: '^\d{4,6}$' }
+                newPin: { type: string, pattern: '^\d{4,6}$' }
+      responses:
+        '200':
+          description: New tokens for this device
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429':
+          description: TOO_MANY_ATTEMPTS
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /auth/register:
     post:
@@ -205,6 +241,17 @@ paths:
                   failures: { type: integer }
 
   # -------------------------------------------------------------- Settings
+  /settings/tenant:
+    get:
+      tags: [Settings]
+      summary: Your own business (Owner) — name, owner, licence, plan
+      responses:
+        '200':
+          description: Business
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tenant' }
+
   /settings:
     get:
       tags: [Settings]
@@ -270,6 +317,9 @@ paths:
     patch:
       tags: [Users]
       summary: Update user (name, active flag, reset PIN)
+      description: >
+        Deactivating a user or setting a new PIN signs them out everywhere: their existing access and refresh
+        tokens fail from the next request (token version, V10).
       requestBody:
         required: true
         content:
@@ -339,6 +389,33 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Area' }
         '409': { $ref: '#/components/responses/Conflict' }
+
+  /areas/overview:
+    get:
+      tags: [Areas]
+      summary: Areas with active client count and active agents (Owner)
+      description: Every area, active first then by name.
+      responses:
+        '200':
+          description: Areas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer, format: int64 }
+                    name: { type: string }
+                    isActive: { type: boolean }
+                    clientCount: { type: integer, description: Active clients }
+                    agents:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id: { type: integer, format: int64 }
+                          name: { type: string }
 
   /areas/{areaId}:
     parameters:

@@ -72,10 +72,15 @@ public class UserService {
             if (!in.isActive() && user.getId() == me.userId()) {
                 throw ApiException.rule("CANNOT_DEACTIVATE_SELF", "You cannot deactivate your own account");
             }
+            if (user.isActive() && !in.isActive()) {
+                user.revokeTokens();
+            }
             user.setActive(in.isActive());
         }
         if (in.pin() != null) {
             user.setPinHash(passwordEncoder.encode(in.pin()));
+            // A new PIN signs the old phone out (lost phone, agent left).
+            user.revokeTokens();
         }
         return toResponse(user);
     }

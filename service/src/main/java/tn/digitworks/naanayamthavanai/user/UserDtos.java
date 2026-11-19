@@ -30,6 +30,12 @@ public final class UserDtos {
     public record RefreshRequest(@NotBlank String refreshToken) {
     }
 
+    /** Signed-in user changes their own PIN. */
+    public record ChangePinRequest(
+            @NotBlank @Pattern(regexp = PIN, message = "PIN must be 4 to 6 digits") String currentPin,
+            @NotBlank @Pattern(regexp = PIN, message = "PIN must be 4 to 6 digits") String newPin) {
+    }
+
     /**
      * Self-registration of a financier. The app also asks the owner to confirm the PIN; only one PIN is sent.
      * plan: only TRIAL until payments exist (null = TRIAL).

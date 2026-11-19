@@ -1,0 +1,160 @@
+<header class="top">
+  <div class="title">
+    <h1>Settings</h1>
+    <span class="muted">Changes apply to new loans and to days from today; existing schedules are not recalculated.</span>
+  </div>
+  @if (dirty()) {
+    <span class="unsaved">Unsaved changes</span>
+    <button type="button" class="nt-btn nt-btn--outline" [disabled]="saving()" (click)="discard()">Discard</button>
+  }
+  <button type="button" class="nt-btn" [disabled]="!dirty() || saving()" (click)="save()">
+    {{ saving() ? 'Saving…' : 'Save settings' }}
+  </button>
+</header>
+@if (saveError()) { <p class="nt-error-text" role="alert">{{ saveError() }}</p> }
+@if (saveMessage()) { <p class="ok" role="status">{{ saveMessage() }}</p> }
+
+@if (plan(); as p) {
+  <section class="plan">
+    <div class="plan-left">
+      <span class="label-light">Plan</span>
+      <span class="plan-name">{{ p.label }}</span>
+      <span class="plan-ends">{{ p.ends }}</span>
+    </div>
+    <button type="button" class="upgrade" disabled title="Paid plans open once payments are available">Upgrade</button>
+    <dl class="facts">
+      <div><dt>Business</dt><dd>{{ p.business }}</dd></div>
+      <div><dt>Owner</dt><dd>{{ p.owner }}</dd></div>
+      <div><dt>Money-lending licence</dt><dd>{{ p.licence }}</dd></div>
+      <div><dt>Records kept</dt><dd>{{ retention() }}</dd></div>
+    </dl>
+  </section>
+}
+
+@if (loadError() && !form()) {
+  <div class="card" role="alert"><p class="nt-error-text">{{ loadError() }}</p></div>
+} @else if (form(); as f) {
+  <div class="grid">
+    <section class="card">
+      <h2>Interest &amp; loans</h2>
+      <div class="nt-field">
+        <label for="st-rate">Maximum rate (legal cap)</label>
+        <div class="suffix"><input id="st-rate" inputmode="decimal" [value]="f.rate" (input)="set('rate', $any($event.target).value)"
+                                   [attr.aria-invalid]="!!shown()['rate']" /><span>% per year</span></div>
+        @if (shown()['rate']; as e) { <span class="err">{{ e }}</span> }
+      </div>
+      <fieldset class="checks">
+        <legend>Allowed methods</legend>
+        <label><input type="checkbox" [checked]="f.methods.includes('FLAT')" (change)="toggleMethod('FLAT', $any($event.target).checked)" /> Flat</label>
+        <label><input type="checkbox" [checked]="f.methods.includes('REDUCING')" (change)="toggleMethod('REDUCING', $any($event.target).checked)" /> Reducing balance</label>
+        @if (shown()['methods']; as e) { <span class="err">{{ e }}</span> }
+      </fieldset>
+      <div class="row">
+        <span class="strong" id="st-max">Active loans per client</span>
+        <div class="stepper" role="group" aria-labelledby="st-max">
+          <button type="button" aria-label="Fewer" [disabled]="f.maxLoans <= 1" (click)="set('maxLoans', f.maxLoans - 1)">−</button>
+          <span aria-live="polite">{{ f.maxLoans }}</span>
+          <button type="button" aria-label="More" [disabled]="f.maxLoans >= 20" (click)="set('maxLoans', f.maxLoans + 1)">+</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Late penalty</h2>
+        <label class="switch">{{ f.penaltyOn ? 'On' : 'Off' }}
+          <input type="checkbox" role="switch" [checked]="f.penaltyOn" (change)="set('penaltyOn', $any($event.target).checked)" />
+        </label>
+      </div>
+      @if (f.penaltyOn) {
+        <div class="seg" role="radiogroup" aria-label="Penalty type">
+          <label [class.on]="f.penaltyType === 'FIXED'"><input type="radio" name="st-pt" [checked]="f.penaltyType === 'FIXED'" (change)="set('penaltyType', 'FIXED')" />Fixed ₹</label>
+          <label [class.on]="f.penaltyType === 'PERCENT'"><input type="radio" name="st-pt" [checked]="f.penaltyType === 'PERCENT'" (change)="set('penaltyType', 'PERCENT')" />% of missed amount</label>
+        </div>
+        <div class="three">
+          <div class="nt-field">
+            <label for="st-pv">{{ f.penaltyType === 'FIXED' ? 'Amount (₹)' : 'Percent' }}</label>
+            <input id="st-pv" inputmode="decimal" [value]="f.penaltyValue" (input)="set('penaltyValue', $any($event.target).value)" [attr.aria-invalid]="!!shown()['penaltyValue']" />
+            @if (shown()['penaltyValue']; as e) { <span class="err">{{ e }}</span> }
+          </div>
+          <div class="nt-field">
+            <label for="st-grace">Grace days</label>
+            <input id="st-grace" inputmode="numeric" [value]="f.grace" (input)="set('grace', $any($event.target).value)" [attr.aria-invalid]="!!shown()['grace']" />
+            @if (shown()['grace']; as e) { <span class="err">{{ e }}</span> }
+          </div>
+          <div class="nt-field">
+            <label for="st-cap">Max per loan</label>
+            <input id="st-cap" inputmode="decimal" placeholder="₹ no limit" [value]="f.cap" (input)="set('cap', $any($event.target).value)" [attr.aria-invalid]="!!shown()['cap']" />
+            @if (shown()['cap']; as e) { <span class="err">{{ e }}</span> }
+          </div>
+        </div>
+        <span class="hint">{{ penaltyNote() }}</span>
+      } @else {
+        <span class="hint">No penalty for missed days. Turning it on never charges days already missed.</span>
+      }
+    </section>
+
+    <section class="card">
+      <h2>How payments are applied</h2>
+      <fieldset class="radios">
+        <legend>Clear first</legend>
+        <label><input type="radio" name="st-order" [checked]="f.order === 'PENALTY_FIRST'" (change)="set('order', 'PENALTY_FIRST')" /> Penalty, then dues</label>
+        <label><input type="radio" name="st-order" [checked]="f.order === 'INSTALLMENT_FIRST'" (change)="set('order', 'INSTALLMENT_FIRST')" /> Dues, then penalty</label>
+      </fieldset>
+      <fieldset class="radios">
+        <legend>Extra money goes to</legend>
+        <label><input type="radio" name="st-adv" [checked]="f.advance === 'NEXT_INSTALLMENTS'" (change)="set('advance', 'NEXT_INSTALLMENTS')" />
+          <span>Next days <span class="muted">— client can skip the coming days</span></span></label>
+        <label><input type="radio" name="st-adv" [checked]="f.advance === 'LAST_INSTALLMENTS'" (change)="set('advance', 'LAST_INSTALLMENTS')" />
+          <span>Last days <span class="muted">— loan finishes earlier; missed days carried forward are cleared first</span></span></label>
+      </fieldset>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Pre-closure</h2>
+        <label class="switch">{{ f.preOn ? 'Allowed' : 'Not allowed' }}
+          <input type="checkbox" role="switch" [checked]="f.preOn" (change)="set('preOn', $any($event.target).checked)" />
+        </label>
+      </div>
+      @if (f.preOn) {
+        <label class="check-line"><input type="checkbox" [checked]="f.rebate" (change)="set('rebate', $any($event.target).checked)" />
+          <span>Don't charge interest for future days <span class="muted">— client pays only the interest up to the closing day</span></span></label>
+        <div class="charge">
+          <div class="seg" role="radiogroup" aria-label="Pre-closure charge">
+            <label [class.on]="f.chargeType === 'NONE'"><input type="radio" name="st-ct" [checked]="f.chargeType === 'NONE'" (change)="set('chargeType', 'NONE')" />No charge</label>
+            <label [class.on]="f.chargeType === 'FIXED'"><input type="radio" name="st-ct" [checked]="f.chargeType === 'FIXED'" (change)="set('chargeType', 'FIXED')" />Fixed ₹</label>
+            <label [class.on]="f.chargeType === 'PERCENT'"><input type="radio" name="st-ct" [checked]="f.chargeType === 'PERCENT'" (change)="set('chargeType', 'PERCENT')" />%</label>
+          </div>
+          @if (f.chargeType !== 'NONE') {
+            <div class="charge-value">
+              <input aria-label="Charge" inputmode="decimal" [value]="f.chargeValue" (input)="set('chargeValue', $any($event.target).value)" [attr.aria-invalid]="!!shown()['chargeValue']" />
+              <span class="muted">{{ f.chargeType === 'PERCENT' ? 'of principal left' : 'per pre-closure' }}</span>
+            </div>
+          }
+        </div>
+        @if (shown()['chargeValue']; as e) { <span class="err">{{ e }}</span> }
+      } @else {
+        <span class="hint">Loans run to the end; a pre-closure quote is refused.</span>
+      }
+    </section>
+
+    <section class="card">
+      <h2>Your PIN</h2>
+      <form class="pin" novalidate (submit)="$event.preventDefault(); changePin()">
+        <div class="nt-field"><label for="st-cur">Current PIN</label>
+          <input id="st-cur" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6" [value]="curPin()" (input)="curPin.set($any($event.target).value)" /></div>
+        <div class="nt-field"><label for="st-new">New PIN</label>
+          <input id="st-new" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" [value]="newPin()" (input)="newPin.set($any($event.target).value)" /></div>
+        <div class="nt-field"><label for="st-new2">New PIN again</label>
+          <input id="st-new2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" [value]="newPin2()" (input)="newPin2.set($any($event.target).value)" /></div>
+        <span class="hint">Your other devices (your phone too) are signed out; this browser stays signed in.</span>
+        @if (pinError()) { <p class="nt-error-text small" role="alert">{{ pinError() }}</p> }
+        @if (pinDone()) { <p class="ok small" role="status">PIN changed. Use the new PIN on your phone.</p> }
+        <button type="submit" class="nt-btn" [disabled]="pinBusy()">{{ pinBusy() ? 'Changing…' : 'Change PIN' }}</button>
+      </form>
+    </section>
+  </div>
+} @else {
+  <p class="muted">Loading…</p>
+}

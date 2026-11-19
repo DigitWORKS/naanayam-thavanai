@@ -31,6 +31,26 @@ public class AreaService {
         return list.stream().filter(a -> s.allows(a.getId())).map(AreaResponse::of).toList();
     }
 
+    /** Every area (active first, then by name) with its active clients and active agents. Owner only. */
+    @Transactional(readOnly = true)
+    public List<AreaDtos.AreaOverview> overview() {
+        long tenantId = CurrentUser.get().requireTenant();
+        java.util.Map<Long, Long> counts = new java.util.HashMap<>();
+        for (Object[] r : areas.activeClientCounts(tenantId)) {
+            counts.put((Long) r[0], ((Number) r[1]).longValue());
+        }
+        java.util.Map<Long, List<AreaDtos.AgentRef>> agents = new java.util.HashMap<>();
+        for (Object[] r : areas.activeAgents(tenantId)) {
+            agents.computeIfAbsent((Long) r[0], k -> new java.util.ArrayList<>())
+                    .add(new AreaDtos.AgentRef((Long) r[1], (String) r[2]));
+        }
+        return areas.findByTenantIdOrderByName(tenantId).stream()
+                .sorted(java.util.Comparator.comparing((Area a) -> !a.isActive()))
+                .map(a -> new AreaDtos.AreaOverview(a.getId(), a.getName(), a.isActive(),
+                        counts.getOrDefault(a.getId(), 0L), agents.getOrDefault(a.getId(), List.of())))
+                .toList();
+    }
+
     @Transactional
     public AreaResponse create(AreaInput in) {
         long tenantId = CurrentUser.get().requireTenant();

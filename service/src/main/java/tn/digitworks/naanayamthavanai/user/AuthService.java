@@ -51,6 +51,25 @@ public class AuthService {
     }
 
     /**
+     * Changes the caller's own PIN after checking the current one. Signs out every other device (token version)
+     * and returns fresh tokens for this one. A wrong current PIN is a 400, not a 401, so clients do not treat
+     * it as an expired session.
+     */
+    @Transactional
+    public TokenResponse changePin(String currentPin, String newPin) {
+        AppUser user = users.findById(CurrentUser.get().userId()).orElseThrow(() -> ApiException.notFound("User"));
+        if (!passwordEncoder.matches(currentPin, user.getPinHash())) {
+            throw ApiException.rule("WRONG_PIN", "Current PIN is incorrect");
+        }
+        if (currentPin.equals(newPin)) {
+            throw ApiException.rule("SAME_PIN", "Choose a PIN different from the current one");
+        }
+        user.setPinHash(passwordEncoder.encode(newPin));
+        user.revokeTokens();
+        return tokens(user);
+    }
+
+    /**
      * Public self-registration: creates the financier on a free trial and signs the owner in.
      * TODO: verify the mobile number with an OTP before this goes live (see docs/PROJECT_STATUS.md).
      */
@@ -70,9 +89,11 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public TokenResponse refresh(String refreshToken) {
-        long userId = jwt.userIdFromRefreshToken(refreshToken);
-        AppUser user = users.findById(userId).orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED,
-                "INVALID_REFRESH_TOKEN", "Refresh token is invalid or expired"));
+        JwtService.RefreshClaims claims = jwt.readRefreshToken(refreshToken);
+        AppUser user = users.findById(claims.userId())
+                .filter(u -> u.getTokenVersion() == claims.tokenVersion())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED,
+                        "INVALID_REFRESH_TOKEN", "Refresh token is invalid or expired"));
         checkCanSignIn(user);
         return tokens(user);
     }

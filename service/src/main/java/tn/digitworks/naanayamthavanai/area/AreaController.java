@@ -33,6 +33,12 @@ public class AreaController {
         return service.list(active);
     }
 
+    @GetMapping("/overview")
+    @PreAuthorize("hasRole('OWNER')")
+    public List<AreaDtos.AreaOverview> overview() {
+        return service.overview();
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('OWNER')")

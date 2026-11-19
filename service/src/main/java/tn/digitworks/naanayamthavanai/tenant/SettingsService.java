@@ -17,10 +17,12 @@ public class SettingsService {
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
     private final TenantSettingsRepository settings;
+    private final TenantRepository tenants;
     private final Clock clock;
 
-    public SettingsService(TenantSettingsRepository settings, Clock clock) {
+    public SettingsService(TenantSettingsRepository settings, TenantRepository tenants, Clock clock) {
         this.settings = settings;
+        this.tenants = tenants;
         this.clock = clock;
     }
 
@@ -33,6 +35,13 @@ public class SettingsService {
     @Transactional(readOnly = true)
     public SettingsDto get() {
         return SettingsDto.of(forTenant(CurrentUser.get().requireTenant()));
+    }
+
+    @Transactional(readOnly = true)
+    public TenantDtos.TenantResponse tenant() {
+        long tenantId = CurrentUser.get().requireTenant();
+        return TenantDtos.TenantResponse.of(tenants.findById(tenantId)
+                .orElseThrow(() -> ApiException.notFound("Tenant")));
     }
 
     @Transactional
