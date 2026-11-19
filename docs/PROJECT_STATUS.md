@@ -231,9 +231,24 @@ API clients generated from `api-spec/openapi.yaml`:
       BOM, formula-safe cells, ≤10,000 rows; LoanCsvTest); LoanSummary + clientPhone, startDate, paidCount,
       installmentCount; loan + clientPhone, areaName, paidCount, installmentCount; installment + extendedFrom;
       ledger + remarks. Spec 49 operations.
-- [ ] Web next: pages — clients + client detail, cash handovers, agents & areas, settings, reports, new loan,
-      Super Admin financiers; with their API gaps (area client counts and agents; admin search and expiring
-      soon; owner PIN reset; agent's day cash list; income export).
+- [~] Web slice 3 written (to verify): Clients (board "Web clients") — list + selected client side by side;
+      /clients/:clientId selects (one route via a URL matcher, so the list is not rebuilt); search (300 ms),
+      All / Behind / No active loan, Area, pages, all in the URL query and kept when picking another client.
+      Rows: name + phone, area, active loans, outstanding, tag (₹x behind / No active loan / Inactive).
+      Panel: initials, area, client since; Call (tel:) and WhatsApp (wa.me); active loans (tag, paid bar,
+      installment · left · ends) linking to the loan; "n of max active loans · limit reached" (GET /settings);
+      + New loan link (/loans/new?clientId=, page still a placeholder); details (alt mobile, address, Aadhaar
+      masked, guarantor, consent date + version); documents list with View (fetched with the token, opened
+      as a blob). New client / Edit dialog: area, name, mobile (new only), alt mobile, address, Aadhaar last 4
+      (new only), guarantor, consent (same EN + Tamil text and version v1 as mobile) / Active toggle (edit);
+      duplicate mobile shows "<name> (<area>) already has this number · Open client". Shared nt-pager and
+      shared/format (formatPhone, pageWindow) now used by Loans too.
+      Not yet on web: document upload (with the client photos item).
+      Backend: client detail + consentVersion, createdAt; PATCH /clients accepts "" to clear alt / guarantor
+      mobile (was a 400).
+- [ ] Web next: pages — cash handovers, agents & areas, settings, reports, new loan, Super Admin financiers;
+      with their API gaps (area client counts and agents; admin search and expiring soon; owner PIN reset;
+      agent's day cash list; income export).
 - [ ] Tamil version: no separate design; done in code (Flutter ARB / Angular i18n) after the web app and the
       remaining functionality are complete. Noto Sans Tamil is already in both designs.
 - [x] API gaps found while designing: `409 CLIENT_EXISTS` now returns `details` {clientId, name, areaId,

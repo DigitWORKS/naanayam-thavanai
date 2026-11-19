@@ -110,7 +110,7 @@ public class ClientService {
         String areaName = areaNames(tenantId, Set.of(c.getAreaId())).get(c.getAreaId());
         return new ClientDetail(c.getId(), c.getAreaId(), areaName, c.getName(), c.getPhone(), c.getAltPhone(),
                 c.getAddress(), c.getAadhaarLast4(), c.getGuarantorName(), c.getGuarantorPhone(),
-                c.getConsentGivenAt(), c.isActive(), active, total);
+                c.getConsentGivenAt(), c.isActive(), active, total, c.getConsentVersion(), c.getCreatedAt());
     }
 
     @Transactional

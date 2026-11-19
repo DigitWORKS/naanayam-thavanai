@@ -110,26 +110,4 @@
   </table>
 </div>
 
-@if (paging(); as p) {
-  <footer class="pager">
-    <span>{{ p.text }}</span>
-    @if (p.last > 1) {
-      <nav aria-label="Pages">
-        @if (p.current > 1) {
-          <button type="button" (click)="goPage(p.current - 1)">← Prev</button>
-        }
-        @for (n of p.pages; track $index) {
-          @if (n === 0) {
-            <span class="gap">…</span>
-          } @else {
-            <button type="button" [class.on]="n === p.current" [attr.aria-current]="n === p.current ? 'page' : null"
-                    (click)="goPage(n)">{{ n }}</button>
-          }
-        }
-        @if (p.current < p.last) {
-          <button type="button" (click)="goPage(p.current + 1)">Next →</button>
-        }
-      </nav>
-    }
-  </footer>
-}
+<nt-pager [meta]="meta()" (pageChange)="goPage($event)" />

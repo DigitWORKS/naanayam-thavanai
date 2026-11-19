@@ -99,6 +99,7 @@ public class Client {
     public LocalDateTime getConsentGivenAt() { return consentGivenAt; }
     public void setConsentGivenAt(LocalDateTime consentGivenAt) { this.consentGivenAt = consentGivenAt; }
     public String getConsentVersion() { return consentVersion; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
     public void setConsentVersion(String consentVersion) { this.consentVersion = consentVersion; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }

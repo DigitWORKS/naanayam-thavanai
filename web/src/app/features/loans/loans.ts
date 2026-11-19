@@ -9,6 +9,8 @@ import { API } from '../../core/api';
 import { apiErrorMessage } from '../../core/api-error';
 import { Money } from '../../core/money';
 import { BusinessSummary } from '../../layout/business-summary';
+import { formatPhone } from '../../shared/format';
+import { Pager } from '../../shared/pager';
 import {
   Area, Frequency, FREQUENCY_LABEL, FREQUENCY_UNIT, LoanStatus, LoanSummary, Page, STATUS_LABEL,
 } from './loan.models';
@@ -27,7 +29,7 @@ const asFrequency = (v: unknown): Frequency | null => (v === 'DAILY' || v === 'W
  */
 @Component({
   selector: 'nt-loans',
-  imports: [RouterLink],
+  imports: [RouterLink, Pager],
   templateUrl: './loans.html',
   styleUrl: './loans.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -108,18 +110,7 @@ export class LoansPage {
       };
     }));
 
-  readonly paging = computed(() => {
-    const meta = this.loansRes.value()?.meta;
-    if (!meta || meta.totalElements === 0) return null;
-    const from = meta.page * meta.size + 1;
-    const to = Math.min(meta.totalElements, from + meta.size - 1);
-    return {
-      text: `Showing ${from}–${to} of ${meta.totalElements}`,
-      current: meta.page + 1,
-      last: meta.totalPages,
-      pages: pageWindow(meta.page + 1, meta.totalPages),
-    };
-  });
+  readonly meta = computed(() => this.loansRes.value()?.meta);
 
   readonly hasFilters = computed(() =>
     !!this.q().trim() || this.area() !== null || !!this.frequency() || this.behind());
@@ -196,19 +187,4 @@ function statusTag(status: LoanStatus, behind: Money): { tag: string; tagClass: 
     default:
       return { tag: STATUS_LABEL[status], tagClass: '' };
   }
-}
-
-/** "9789044120" → "97890 44120". */
-export function formatPhone(p: string | null | undefined): string {
-  return p && /^\d{10}$/.test(p) ? `${p.slice(0, 5)} ${p.slice(5)}` : (p ?? '');
-}
-
-/** Page numbers around the current one: 1 … 4 5 [6] 7 8 … 20 (0 = gap). */
-export function pageWindow(current: number, last: number): number[] {
-  const out: number[] = [];
-  for (let p = 1; p <= last; p++) {
-    if (p === 1 || p === last || Math.abs(p - current) <= 2) out.push(p);
-    else if (out[out.length - 1] !== 0) out.push(0);
-  }
-  return out;
 }

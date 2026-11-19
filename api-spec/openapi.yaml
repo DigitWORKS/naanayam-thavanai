@@ -1410,6 +1410,8 @@ components:
               type: array
               items: { $ref: '#/components/schemas/LoanSummary' }
             totalOutstanding: { $ref: '#/components/schemas/Money' }
+            consentVersion: { type: string, example: v1, description: Consent notice the client agreed to }
+            createdAt: { type: string, format: date-time, description: Client since }
     ClientListItem:
       type: object
       properties:

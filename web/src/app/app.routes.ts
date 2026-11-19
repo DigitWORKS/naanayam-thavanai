@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+import { Routes, UrlMatchResult, UrlSegment } from '@angular/router';
 
 import { authGuard, guestGuard, roleGuard } from './core/auth/auth.guards';
 
@@ -34,7 +34,13 @@ export const routes: Routes = [
         title: 'Dashboard · Naanayam Thavanai',
       },
       ownerPage('today', "Today's collections"),
-      ownerPage('clients', 'Clients'),
+      {
+        // /clients and /clients/:clientId share one route, so picking another client keeps the list (same
+        // component instance) instead of rebuilding the page.
+        matcher: clientsMatcher,
+        loadComponent: () => import('./features/clients/clients').then((m) => m.ClientsPage),
+        title: 'Clients · Naanayam Thavanai',
+      },
       ownerPage('loans/new', 'New loan'),
       {
         path: 'loans/:loanId',
@@ -55,3 +61,10 @@ export const routes: Routes = [
   },
   { path: '**', redirectTo: '' },
 ];
+
+/** Matches "clients" and "clients/<id>" (id → :clientId). */
+export function clientsMatcher(segments: UrlSegment[]): UrlMatchResult | null {
+  if (segments[0]?.path !== 'clients' || segments.length > 2) return null;
+  if (segments.length === 2 && !/^\d+$/.test(segments[1].path)) return null;
+  return { consumed: segments, posParams: segments.length === 2 ? { clientId: segments[1] } : {} };
+}

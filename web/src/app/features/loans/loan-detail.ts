@@ -12,7 +12,7 @@ import { CollectPayment } from './collect-payment';
 import {
   FREQUENCY_LABEL, Installment, LedgerEntry, LoanDetail, STATUS_LABEL,
 } from './loan.models';
-import { formatPhone } from './loans';
+import { formatPhone } from '../../shared/format';
 import { PrecloseDialog } from './preclose-dialog';
 import { ReasonDialog } from './reason-dialog';
 

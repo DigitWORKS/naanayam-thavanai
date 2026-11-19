@@ -1,0 +1,95 @@
+<header class="top">
+  <div class="title">
+    <h1>Clients</h1>
+    <span class="muted">{{ countText() }}</span>
+  </div>
+  <button type="button" class="nt-btn" (click)="creating.set(true)">+ New client</button>
+</header>
+
+<section class="list">
+  <div class="filters">
+    <label class="search">
+      <span aria-hidden="true">⌕</span>
+      <span class="visually-hidden">Search clients</span>
+      <input type="search" placeholder="Search name or phone" [value]="searchText()"
+             (input)="onSearch($any($event.target).value)" />
+    </label>
+    <div class="chips" role="group" aria-label="Show">
+      @for (f of filters; track f.id) {
+        <button type="button" class="chip" [class.on]="filter() === f.id" [attr.aria-pressed]="filter() === f.id"
+                (click)="setFilter(f.id)">{{ f.label }}</button>
+      }
+    </div>
+    <label>
+      <span class="visually-hidden">Area</span>
+      <select class="nt-select chip-select" (change)="setArea($any($event.target).value)">
+        <option value="" [selected]="area() === null">Area: All</option>
+        @for (a of areas(); track a.id) {
+          <option [value]="a.id" [selected]="a.id === area()">{{ a.name }}{{ a.isActive ? '' : ' (inactive)' }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Client</th>
+          <th scope="col">Area</th>
+          <th scope="col" class="center">Loans</th>
+          <th scope="col" class="num">Outstanding</th>
+          <th scope="col"><span class="visually-hidden">Status</span></th>
+        </tr>
+      </thead>
+      <tbody [class.stale]="loading() && rows().length">
+        @for (r of rows(); track r.id) {
+          <tr [class.selected]="r.selected" (click)="open(r.id)">
+            <td>
+              <button type="button" class="name" [attr.aria-current]="r.selected ? 'true' : null"
+                      (click)="$event.stopPropagation(); open(r.id)">{{ r.name }}</button>
+              <br /><span class="small">{{ r.phone }}</span>
+            </td>
+            <td class="muted">{{ r.area }}</td>
+            <td class="center" [class.muted]="!r.loans">{{ r.loans }}</td>
+            <td class="num strong" [class.muted]="!r.loans">{{ r.outstanding }}</td>
+            <td>
+              @if (r.tag) { <span class="nt-tag" [class]="r.tagClass">{{ r.tag }}</span> }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="empty">
+              @if (error()) {
+                <span class="nt-error-text">{{ error() }}</span>
+                <button type="button" class="nt-link-btn" (click)="retry()">Retry</button>
+              } @else if (loading()) {
+                Loading…
+              } @else if (hasFilters()) {
+                No clients match.
+                <button type="button" class="nt-link-btn" (click)="clearFilters()">Clear filters</button>
+              } @else {
+                No clients yet.
+                <button type="button" class="nt-link-btn" (click)="creating.set(true)">Add the first one</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <nt-pager [meta]="meta()" (pageChange)="goPage($event)" />
+</section>
+
+@if (clientId(); as id) {
+  <nt-client-panel class="panel" [clientId]="id" (saved)="onSaved($event)" (closed)="closePanel()" />
+} @else {
+  <aside class="panel empty-panel">
+    <p class="muted">Pick a client to see their loans and details.</p>
+  </aside>
+}
+
+@if (creating()) {
+  <nt-client-form [areas]="areas()" (saved)="onSaved($event)" (closed)="creating.set(false)" (openExisting)="open($event)" />
+}

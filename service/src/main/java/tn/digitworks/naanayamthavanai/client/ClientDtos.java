@@ -33,7 +33,7 @@ public final class ClientDtos {
     public record ClientDetail(Long id, Long areaId, String areaName, String name, String phone, String altPhone,
                                String address, String aadhaarLast4, String guarantorName, String guarantorPhone,
                                LocalDateTime consentGivenAt, boolean isActive, List<LoanSummary> activeLoans,
-                               BigDecimal totalOutstanding) {
+                               BigDecimal totalOutstanding, String consentVersion, LocalDateTime createdAt) {
     }
 
     public record ClientCreate(
@@ -49,15 +49,19 @@ public final class ClientDtos {
             @NotBlank @Size(max = 20) String consentVersion) {
     }
 
+    /** PATCH: null leaves a field as is; "" clears an optional one (alt / guarantor phone included). */
     public record ClientUpdate(
             Long areaId,
             @Size(min = 1, max = 100) String name,
-            @Pattern(regexp = UserDtos.PHONE) String altPhone,
+            @Pattern(regexp = PHONE_OR_EMPTY) String altPhone,
             @Size(max = 500) String address,
             @Size(max = 100) String guarantorName,
-            @Pattern(regexp = UserDtos.PHONE) String guarantorPhone,
+            @Pattern(regexp = PHONE_OR_EMPTY) String guarantorPhone,
             Boolean isActive) {
     }
+
+    /** A mobile number, or "" to clear it. */
+    static final String PHONE_OR_EMPTY = "^$|" + UserDtos.PHONE;
 
     /** url points to the authenticated download endpoint. */
     public record DocumentResponse(Long id, ClientDocument.DocType docType, String url, LocalDateTime uploadedAt) {

@@ -1,4 +1,4 @@
-import { formatPhone, pageWindow } from './loans';
+import { formatPhone, pageWindow } from '../../shared/format';
 
 describe('pageWindow', () => {
   it('shows every page when there are few', () => {
