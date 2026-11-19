@@ -217,7 +217,7 @@ class _NewClientScreenState extends ConsumerState<NewClientScreen> {
               subtitle: const Padding(
                 padding: EdgeInsets.only(top: 4),
                 child: Text(
-                  'I allow this finance to store my details and documents for my loans and to send me payment SMS.\n'
+                  'I allow this business to store my details and documents for my loans and to send me payment SMS.\n'
                   'இந்தக் கடனுக்காக என் விவரங்களையும் ஆவணங்களையும் சேமிக்கவும், பணம் செலுத்திய SMS அனுப்பவும் ஒப்புக்கொள்கிறேன்.',
                   style: TextStyle(fontSize: 13, height: 1.5, color: AppColors.ink),
                 ),

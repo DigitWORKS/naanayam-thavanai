@@ -73,6 +73,6 @@ export interface SettingsLite {
 /** Consent notice shown on the new-client form; same text and version as the mobile app. */
 export const CONSENT_VERSION = 'v1';
 export const CONSENT_TEXT_EN =
-  'I allow this finance to store my details and documents for my loans and to send me payment SMS.';
+  'I allow this business to store my details and documents for my loans and to send me payment SMS.';
 export const CONSENT_TEXT_TA =
   'இந்தக் கடனுக்காக என் விவரங்களையும் ஆவணங்களையும் சேமிக்கவும், பணம் செலுத்திய SMS அனுப்பவும் ஒப்புக்கொள்கிறேன்.';

@@ -66,7 +66,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             'PHONE_IN_USE' =>
               'This mobile number is already registered. Log in instead.',
             'TENANT_EXISTS' =>
-              'A finance with this number is already registered.',
+              'A business with this number is already registered.',
             'TOO_MANY_REQUESTS' =>
               'Too many attempts. Please try again in an hour.',
             _ => e.message,
@@ -87,7 +87,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       appBar: AppBar(
         toolbarHeight: 72,
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Register your finance', style: AppTheme.heading(20)),
+          Text('Register your business', style: AppTheme.heading(20)),
           const Text('Takes 2 minutes · start with a free trial',
               style: TextStyle(
                   fontSize: 13,

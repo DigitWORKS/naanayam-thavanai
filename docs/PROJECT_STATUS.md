@@ -85,7 +85,7 @@ API clients generated from `api-spec/openapi.yaml`:
   Access token 12 h, refresh token 30 days (stateless JWT with `typ=refresh`). First Super Admin is created
   from `SUPER_ADMIN_PHONE` / `SUPER_ADMIN_PIN` on startup.
 - **Self-registration** (decided 2026-11-16): financiers register themselves from the login screen
-  ("Run a finance business? Register"). The owner enters business name, licence no. (optional), maximum
+  ("Run a lending business? Register"). The owner enters business name, licence no. (optional), maximum
   interest rate, name, mobile, and **sets their own PIN** (current PIN login). **Mobile OTP verification will
   replace/strengthen this later** and is required before the public sign-up goes live. Super Admin keeps
   `POST /admin/tenants` for manual onboarding.
@@ -321,6 +321,10 @@ API clients generated from `api-spec/openapi.yaml`:
 - [x] Naming: the UI says "business" instead of "financier" (Super Admin › Businesses at /admin/businesses;
       /admin/financiers redirects; web login hint; mobile "Ask the business owner to reset it"; server
       messages). Code / API keep "tenant". Rule in CLAUDE.md › Words.
+      Files renamed too (web features/admin: businesses.*, business-panel.*, business-form.ts). "finance" as a
+      noun also replaced: mobile register ("Register your business", "A business with this number…"), login
+      ("Run a lending business?"), web login. Client consent notice now "I allow this business to store…";
+      version kept at v1 (decided: wording change only).
 - [ ] Web: all pages in the design are built; next is verifying slices 1–9 on the real backend.
 - [ ] Tamil version: no separate design; done in code (Flutter ARB / Angular i18n) after the web app and the
       remaining functionality are complete. Noto Sans Tamil is already in both designs.

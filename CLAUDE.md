@@ -47,7 +47,8 @@ Env: `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET` (required outside `local`,
 
 ## Words
 - On screens and in messages people read, a customer of Naanayam is a **business** (Super Admin › Businesses,
-  "Add business", "This business account is suspended"). Never "financier" or "tenant" in the UI.
+  "Add business", "This business account is suspended"). Never "financier", "finance" (as a noun) or
+  "tenant" in the UI. The client consent version is v1 in web and mobile; keep the two the same.
 - In code, the database and the API it stays **tenant** (`tenant_id`, `/admin/tenants`, `Tenant`).
 
 ## Tenancy (never bypass)

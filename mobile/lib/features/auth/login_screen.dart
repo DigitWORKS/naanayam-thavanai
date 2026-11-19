@@ -138,7 +138,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               fontWeight: FontWeight.w500,
                               color: AppColors.ink),
                           children: [
-                            TextSpan(text: 'Run a finance business?  '),
+                            TextSpan(text: 'Run a lending business?  '),
                             TextSpan(
                                 text: 'Register',
                                 style: TextStyle(
