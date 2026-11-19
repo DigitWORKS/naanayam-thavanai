@@ -18,6 +18,7 @@ class Handover {
     required this.difference,
     required this.status,
     this.remarks,
+    this.ownerRemarks,
   });
 
   final int id;
@@ -29,7 +30,11 @@ class Handover {
   /// handed − expected: negative means short, positive means extra.
   final Money difference;
   final HandoverStatus status;
+  /// The agent's note from submit.
   final String? remarks;
+
+  /// The owner's note from confirm / dispute.
+  final String? ownerRemarks;
 
   bool get matches => difference.isZero;
 
@@ -42,6 +47,7 @@ class Handover {
         difference: Money.fromJson(j['difference']),
         status: HandoverStatus.values.byName((j['status'] as String).toLowerCase()),
         remarks: j['remarks'] as String?,
+        ownerRemarks: j['ownerRemarks'] as String?,
       );
 }
 

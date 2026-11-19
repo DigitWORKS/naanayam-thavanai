@@ -296,6 +296,10 @@ class _TodayStatus extends StatelessWidget {
           const SizedBox(height: 8),
           Text('Note: ${h.remarks}', style: const TextStyle(fontSize: 13, color: AppColors.muted)),
         ],
+        if (h.ownerRemarks != null && h.ownerRemarks!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text('Owner: ${h.ownerRemarks}', style: const TextStyle(fontSize: 13, color: AppColors.muted)),
+        ],
         if (h.status == HandoverStatus.pending) ...[
           const SizedBox(height: 8),
           const Text('Waiting for the owner to confirm.', style: TextStyle(fontSize: 13, color: AppColors.muted)),

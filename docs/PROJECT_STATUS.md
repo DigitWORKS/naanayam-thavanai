@@ -7,7 +7,7 @@ Last updated: 2026-11-14
 ### Build order
 | # | Step | Status |
 |---|---|---|
-| 1 | API spec + DB schema | ✅ Done (spec 45 operations, migrations V1–V8) |
+| 1 | API spec + DB schema | ✅ Done (spec 49 operations, migrations V1–V9) |
 | 2 | Backend core logic (schedule, allocation, missed days, pre-closure) | ✅ Done, unit tested |
 | 3 | Backend: entities, repositories, services, controllers | ✅ Done |
 | 4 | First run on local MySQL | ✅ Done 2026-11-14: Flyway V1–V6 applied, Hibernate validation passed, Super Admin created |
@@ -115,6 +115,7 @@ API clients generated from `api-spec/openapi.yaml`:
 - `V5`: `tenant_settings.penalty_effective_from`. `V6`: `payment_allocation.interest_part`.
 - `V7`: index `payment (tenant_id, upi_ref_no)` for the duplicate UTR check (not unique, see decisions).
 - `V8`: `tenant.plan` (TRIAL/MONTHLY/YEARLY) and `tenant.terms_accepted_at`.
+- `V9`: `cash_handover.owner_remarks` — the owner's note on confirm / dispute; `remarks` stays the agent's note.
 
 ### Backend (`service/`)
 - Pure logic + tests (62 unit tests, all passing):
@@ -208,12 +209,31 @@ API clients generated from `api-spec/openapi.yaml`:
       oldest unpaid due). Side menu and dashboard share one GET /reports/dashboard. Checked against a mock API at
       1440 and 900 px. Backend: /reports/dashboard adds activeClients, penaltyDue, fy, fyInterest; new
       GET /reports/agents-today and GET /reports/most-behind (owner); spec now 47 operations.
-      Known: an owner's note on confirm / dispute replaces the agent's note (cash_handover has one remarks
-      column); the dialog says so. Fix later with a separate owner_remarks column.
-- [ ] Web next: pages — loans + loan detail, clients, cash handovers, agents & areas, settings, reports, Super
-      Admin financiers; with their API gaps (loans q / area / frequency / behind filters, sort and CSV; area client
-      counts and agents; missed→extension link; admin search and expiring soon; owner PIN reset; agent's day cash
-      list; income export).
+      Owner's note is kept apart from the agent's (V9 owner_remarks; API ownerRemarks on handovers; mobile
+      handover card shows "Owner: …").
+- [~] Web slice 2 written (to verify): Loans list (board "Web loans list") — tabs with counts (Active / Closed /
+      Pre-closed / Defaulted), search (loan no., client name, phone digits; 300 ms debounce), Area and Frequency
+      filters, Behind only (Active tab), paid bar "58 of 102 days", status tag (₹x behind / On track / …),
+      pages; all filters in the URL query (?status=&q=&area=&frequency=&behind=true&page=) so Back, reload and
+      the dashboard's "All N loans" link work; Export CSV downloads the current tab + filters (all pages).
+      Loan detail (board "Web loan detail") — header with client, phone, area, start; Outstanding with paid bar,
+      behind + penalty; facts (principal, interest, total, paid, installment, ends with +extensions, interest
+      collected, given to client); legal note / closed date; Payments newest first (5, then "All N"), reversed
+      ones struck through with the reason; Schedule from 4 days back + last 3 rows ("⋯ N more ⋯", Show all),
+      today highlighted, "Missed → moved to #101" / "Extension (from #92)". Actions (active loans): Collect
+      payment (amount chips: installment / behind + today / all; cash or UPI with 12-digit UTR; one clientTxnId
+      per dialog so a retry is not a second payment), Pre-close quote (breakdown, cash / UPI, refreshes the quote
+      on QUOTE_OUTDATED), Mark defaulted (legal note), Reverse payment (reason; active and closed loans,
+      not pre-closure payments). Shared: nt-dialog (native <dialog>), apiErrorMessage, list styles.
+      Fixed: Esc did not close the dashboard's handover dialog (a template listener returning false cancels
+      the event).
+      Backend: GET /loans adds frequency, q, behind; GET /loans/counts; GET /loans/export (owner, CSV, UTF-8
+      BOM, formula-safe cells, ≤10,000 rows; LoanCsvTest); LoanSummary + clientPhone, startDate, paidCount,
+      installmentCount; loan + clientPhone, areaName, paidCount, installmentCount; installment + extendedFrom;
+      ledger + remarks. Spec 49 operations.
+- [ ] Web next: pages — clients + client detail, cash handovers, agents & areas, settings, reports, new loan,
+      Super Admin financiers; with their API gaps (area client counts and agents; admin search and expiring
+      soon; owner PIN reset; agent's day cash list; income export).
 - [ ] Tamil version: no separate design; done in code (Flutter ARB / Angular i18n) after the web app and the
       remaining functionality are complete. Noto Sans Tamil is already in both designs.
 - [x] API gaps found while designing: `409 CLIENT_EXISTS` now returns `details` {clientId, name, areaId,

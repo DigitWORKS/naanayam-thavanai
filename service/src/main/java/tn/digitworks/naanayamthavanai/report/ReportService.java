@@ -39,7 +39,7 @@ public class ReportService {
 
     /** Today's handover of one agent (dashboard "Today by agent"). */
     public record HandoverBrief(Long id, BigDecimal expectedAmount, BigDecimal handedAmount, String status,
-                                String remarks) {
+                                String remarks, String ownerRemarks) {
     }
 
     /**
@@ -176,10 +176,11 @@ public class ReportService {
 
         Map<Long, HandoverBrief> handed = new java.util.HashMap<>();
         for (Object[] r : rows("""
-                select agent_id, id, expected_amount, handed_amount, status, remarks
+                select agent_id, id, expected_amount, handed_amount, status, remarks, owner_remarks
                 from cash_handover where tenant_id = :t and handover_date = :d
                 """, onDay)) {
-            handed.put(id(r[0]), new HandoverBrief(id(r[1]), money(r[2]), money(r[3]), (String) r[4], (String) r[5]));
+            handed.put(id(r[0]), new HandoverBrief(id(r[1]), money(r[2]), money(r[3]), (String) r[4], (String) r[5],
+                    (String) r[6]));
         }
 
         List<AgentDay> out = new ArrayList<>();

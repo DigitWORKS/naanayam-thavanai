@@ -1,0 +1,135 @@
+<header class="top">
+  <div class="title">
+    <h1>Loans</h1>
+    <span class="muted">{{ headerText() }}</span>
+  </div>
+  <button type="button" class="nt-btn nt-btn--outline" [disabled]="exporting()" (click)="exportCsv()">
+    {{ exporting() ? 'Exporting…' : 'Export CSV' }}
+  </button>
+  <a class="nt-btn" routerLink="/loans/new">+ New loan</a>
+</header>
+@if (exportError()) {
+  <p class="nt-error-text" role="alert">{{ exportError() }}</p>
+}
+
+<div class="filters">
+  <div role="tablist" aria-label="Loan status" class="tabs">
+    @for (t of tabs(); track t.id) {
+      <button type="button" role="tab" [attr.aria-selected]="t.id === status()" [class.on]="t.id === status()"
+              (click)="pickTab(t.id)">
+        {{ t.label }}@if (t.count !== undefined) { <span class="count">{{ t.count }}</span>}
+      </button>
+    }
+  </div>
+
+  <label class="search">
+    <span aria-hidden="true">⌕</span>
+    <span class="visually-hidden">Search loans</span>
+    <input type="search" placeholder="Client, phone or loan no." [value]="searchText()"
+           (input)="onSearch($any($event.target).value)" />
+  </label>
+
+  <label>
+    <span class="visually-hidden">Area</span>
+    <select class="nt-select" (change)="setArea($any($event.target).value)">
+      <option value="" [selected]="area() === null">Area: All</option>
+      @for (a of areas(); track a.id) {
+        <option [value]="a.id" [selected]="a.id === area()">{{ a.name }}{{ a.isActive ? '' : ' (inactive)' }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    <span class="visually-hidden">Frequency</span>
+    <select class="nt-select" (change)="setFrequency($any($event.target).value)">
+      <option value="" [selected]="!frequency()">Frequency: All</option>
+      @for (f of frequencies; track f[0]) {
+        <option [value]="f[0]" [selected]="f[0] === frequency()">{{ f[1] }}</option>
+      }
+    </select>
+  </label>
+
+  @if (status() === 'ACTIVE') {
+    <label class="behind">
+      <input type="checkbox" [checked]="behind()" (change)="setBehind($any($event.target).checked)" />
+      Behind only
+    </label>
+  }
+</div>
+
+<div class="table-card">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Loan</th>
+        <th scope="col">Client</th>
+        <th scope="col">Area</th>
+        <th scope="col" class="num">Principal</th>
+        <th scope="col">Installment</th>
+        <th scope="col" class="paid">Paid</th>
+        <th scope="col" class="num">Outstanding</th>
+        <th scope="col">Status</th>
+        <th scope="col">Ends</th>
+      </tr>
+    </thead>
+    <tbody [class.stale]="loading() && rows().length">
+      @for (r of rows(); track r.id) {
+        <tr>
+          <td><a class="loan-no" [routerLink]="['/loans', r.id]">{{ r.loanNo }}</a></td>
+          <td><span class="strong">{{ r.client }}</span><br /><span class="small">{{ r.phone }}</span></td>
+          <td class="muted">{{ r.area }}</td>
+          <td class="num">{{ r.principal }}</td>
+          <td>{{ r.installment }}</td>
+          <td>
+            <div class="nt-bar" role="progressbar" [attr.aria-valuenow]="r.paidPct" aria-valuemin="0"
+                 aria-valuemax="100" [attr.aria-label]="r.paidText"><div [style.width.%]="r.paidPct"></div></div>
+            <span class="small">{{ r.paidText }}</span>
+          </td>
+          <td class="num strong">{{ r.outstanding }}</td>
+          <td><span class="nt-tag" [class]="r.tagClass">{{ r.tag }}</span></td>
+          <td class="muted nowrap">{{ r.ends }}</td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="9" class="empty">
+            @if (error()) {
+              <span class="nt-error-text">{{ error() }}</span>
+              <button type="button" class="nt-link-btn" (click)="retry()">Retry</button>
+            } @else if (loading()) {
+              Loading…
+            } @else if (hasFilters()) {
+              No loans match these filters.
+              <button type="button" class="nt-link-btn" (click)="clearFilters()">Clear filters</button>
+            } @else {
+              No {{ status() === 'ACTIVE' ? 'active' : '' }} loans yet.
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+@if (paging(); as p) {
+  <footer class="pager">
+    <span>{{ p.text }}</span>
+    @if (p.last > 1) {
+      <nav aria-label="Pages">
+        @if (p.current > 1) {
+          <button type="button" (click)="goPage(p.current - 1)">← Prev</button>
+        }
+        @for (n of p.pages; track $index) {
+          @if (n === 0) {
+            <span class="gap">…</span>
+          } @else {
+            <button type="button" [class.on]="n === p.current" [attr.aria-current]="n === p.current ? 'page' : null"
+                    (click)="goPage(n)">{{ n }}</button>
+          }
+        }
+        @if (p.current < p.last) {
+          <button type="button" (click)="goPage(p.current + 1)">Next →</button>
+        }
+      </nav>
+    }
+  </footer>
+}

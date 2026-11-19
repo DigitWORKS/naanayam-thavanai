@@ -28,7 +28,7 @@ public class CashHandoverService {
     public record HandoverResponse(Long id, Long agentId, String agentName, LocalDate handoverDate,
                                    BigDecimal expectedAmount, BigDecimal handedAmount, BigDecimal difference,
                                    CashHandover.Status status, Long receivedBy, String remarks,
-                                   LocalDateTime confirmedAt) {
+                                   String ownerRemarks, LocalDateTime confirmedAt) {
     }
 
     public record HandoverSubmit(@NotNull LocalDate handoverDate,
@@ -132,6 +132,6 @@ public class CashHandoverService {
     private static HandoverResponse toResponse(CashHandover h, String agentName) {
         return new HandoverResponse(h.getId(), h.getAgentId(), agentName, h.getHandoverDate(), h.getExpectedAmount(),
                 h.getHandedAmount(), h.getHandedAmount().subtract(h.getExpectedAmount()), h.getStatus(),
-                h.getReceivedBy(), h.getRemarks(), h.getConfirmedAt());
+                h.getReceivedBy(), h.getRemarks(), h.getOwnerRemarks(), h.getConfirmedAt());
     }
 }

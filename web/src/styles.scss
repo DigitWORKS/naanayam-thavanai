@@ -105,3 +105,68 @@ h1, h2, h3 { font-family: var(--nt-font-display); margin: 0; }
   margin: -1px; padding: 0;
   overflow: hidden; clip: rect(0 0 0 0); border: 0;
 }
+
+// ---------------------------------------------------------------- shared list / detail pieces
+
+.nt-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font: 600 12px var(--nt-font);
+  white-space: nowrap;
+  background: var(--nt-divider);
+  color: var(--nt-muted);
+
+  &--ok { background: var(--nt-brand-tint); color: var(--nt-brand); }
+  &--warn { background: var(--nt-warning-tint); color: var(--nt-warning); }
+  &--danger { background: var(--nt-error-tint); color: var(--nt-error); }
+}
+
+.nt-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--nt-divider);
+  overflow: hidden;
+
+  > div { height: 100%; background: var(--nt-brand); border-radius: 999px; }
+}
+
+.nt-link-btn {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: 600 13px var(--nt-font);
+  color: var(--nt-brand);
+  cursor: pointer;
+  &:hover { color: var(--nt-brand-dark); }
+  &--danger { color: var(--nt-error); &:hover { color: var(--nt-error); text-decoration: underline; } }
+}
+
+.nt-btn--danger-text {
+  background: transparent;
+  color: var(--nt-error);
+  &:hover { background: var(--nt-error-tint); color: var(--nt-error); }
+}
+
+.nt-select {
+  height: 42px;
+  padding: 0 12px;
+  border-radius: var(--nt-radius);
+  border: 1px solid #dce3e0;
+  background: var(--nt-surface);
+  font: 500 14px var(--nt-font);
+  color: var(--nt-ink);
+}
+
+.nt-field textarea {
+  border: 1.5px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  padding: 10px 14px;
+  font: 500 15px var(--nt-font);
+  color: var(--nt-ink);
+  resize: vertical;
+  outline: none;
+  &:focus { border-color: var(--nt-brand); }
+}
+
+.nt-help { font: 500 12px var(--nt-font); color: var(--nt-muted); }

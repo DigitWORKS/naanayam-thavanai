@@ -44,6 +44,7 @@ export interface AgentDay {
     handedAmount: string;
     status: HandoverStatus;
     remarks: string | null;
+    ownerRemarks: string | null;
   } | null;
 }
 
@@ -81,6 +82,9 @@ export interface Handover {
   difference: string;
   status: HandoverStatus;
   receivedBy: number | null;
+  /** The agent's note from submit. */
   remarks: string | null;
+  /** The owner's note from confirm / dispute. */
+  ownerRemarks: string | null;
   confirmedAt: string | null;
 }

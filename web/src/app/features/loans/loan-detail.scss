@@ -1,0 +1,198 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.crumbs { font: 500 13px var(--nt-font); color: var(--nt-muted); a { text-decoration: none; } }
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  h1 { font: 700 22px var(--nt-font-display); }
+  p { margin: 0; }
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.title {
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  h1 { font: 700 28px var(--nt-font-display); }
+}
+
+.sub { font: 500 14px var(--nt-font); color: var(--nt-muted); }
+.client { font-weight: 600; text-decoration: none; }
+.dark { border-color: var(--nt-ink); }
+
+.muted { color: var(--nt-muted); }
+.strong { font-weight: 600; }
+.small { font: 500 12px var(--nt-font); color: var(--nt-muted); }
+.warn { color: var(--nt-warning); }
+.label { font: 500 13px var(--nt-font); color: var(--nt-muted); }
+.stack { display: flex; flex-direction: column; gap: 2px; }
+.grow { flex: 1; min-width: 0; }
+p { margin: 0; }
+
+// ---------------------------------------------------------------- layout
+
+.layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.side {
+  flex: 1 1 340px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .side { max-width: none; }
+}
+
+.balance {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.balance-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.big { font: 700 32px var(--nt-font-display); font-variant-numeric: tabular-nums; }
+.thick { height: 8px; }
+
+.behind, .closed, .legal {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font: 600 13px var(--nt-font);
+}
+.behind { background: var(--nt-warning-tint); color: var(--nt-warning); }
+.closed { background: var(--nt-bg); color: var(--nt-muted); }
+.legal {
+  background: var(--nt-error-tint);
+  color: var(--nt-ink);
+  font-weight: 500;
+  span { display: block; font-weight: 600; color: var(--nt-error); margin-bottom: 2px; }
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 12px;
+
+  .label { font-size: 12px; }
+  .fact { font: 600 15px var(--nt-font); }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  h2 { font: 700 16px var(--nt-font-display); }
+  .label { font-size: 12px; }
+}
+
+// ---------------------------------------------------------------- payments
+
+.payments {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  .head { margin-bottom: 6px; }
+}
+
+.pay {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid #eef2f0;
+  font-size: 14px;
+
+  .amount { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .spacer { width: 46px; }
+
+  &.reversed {
+    color: var(--nt-error);
+    .small { color: var(--nt-error); }
+    .amount { text-decoration: line-through; }
+  }
+}
+
+.empty { padding: 10px 0; border-top: 1px solid #eef2f0; }
+.more { align-self: flex-start; padding-top: 8px; }
+
+// ---------------------------------------------------------------- schedule
+
+.schedule {
+  flex: 999 1 480px;
+  min-width: 0;
+  background: var(--nt-surface);
+  border-radius: var(--nt-radius-card);
+  overflow-x: auto;
+
+  .head { padding: 16px 18px 8px; }
+}
+
+.pad { padding: 8px 18px 18px; }
+
+table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font: 500 14px var(--nt-font);
+}
+
+th {
+  padding: 10px 8px;
+  text-align: left;
+  font: 600 12px var(--nt-font);
+  color: var(--nt-muted);
+  background: #fafbfa;
+}
+
+td {
+  padding: 11px 8px;
+  border-top: 1px solid #eef2f0;
+}
+
+th:first-child, td:first-child { padding-left: 18px; }
+th:last-child, td:last-child { padding-right: 18px; }
+
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+tr.today { background: var(--nt-brand-tint); }
+tr.gap td { padding: 8px 18px; text-align: center; font-size: 12px; }
+
+.status {
+  &.ok { color: var(--nt-brand); font-weight: 600; }
+  &.warn { color: var(--nt-warning); font-weight: 600; }
+  &.strong { font-weight: 700; }
+  &.muted { color: var(--nt-muted); }
+}

@@ -1,0 +1,74 @@
+// Shared by the loan dialogs (collect payment, pre-close, reason).
+.form { display: flex; flex-direction: column; gap: 16px; }
+
+.who { margin: -6px 0 0; font: 500 14px var(--nt-font); color: var(--nt-muted); }
+
+.small { font-size: 13px; }
+.opt { font-weight: 500; color: var(--nt-muted); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--nt-border);
+  background: var(--nt-surface);
+  font: 600 12px var(--nt-font);
+  color: var(--nt-ink);
+  cursor: pointer;
+  &:hover { border-color: var(--nt-brand); color: var(--nt-brand); }
+}
+
+.modes {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend { font: 600 14px var(--nt-font); margin-bottom: 8px; padding: 0; }
+
+  label {
+    flex: 1;
+    height: 44px;
+    border: 1.5px solid var(--nt-border);
+    border-radius: var(--nt-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font: 600 14px var(--nt-font);
+    cursor: pointer;
+
+    &.on { border-color: var(--nt-brand); background: var(--nt-brand-tint); color: var(--nt-brand); }
+    &:focus-within { outline: 2px solid var(--nt-brand); outline-offset: 2px; }
+  }
+
+  input { position: absolute; opacity: 0; pointer-events: none; }
+}
+
+.lines {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+  margin: 0;
+  font: 500 14px var(--nt-font);
+
+  dt { color: var(--nt-muted); }
+  dd { margin: 0; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .total { padding-top: 8px; border-top: 1px solid var(--nt-divider); font-size: 16px; color: var(--nt-ink); }
+  .minus { color: var(--nt-brand); }
+}
+
+.warn-box {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--nt-error-tint);
+  color: var(--nt-error);
+  font: 600 13px var(--nt-font);
+}
+
+.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 2px; }
+.danger { background: var(--nt-error); &:hover { background: #8c1d17; } }
+p { margin: 0; }

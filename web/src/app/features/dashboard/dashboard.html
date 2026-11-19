@@ -171,7 +171,7 @@
       <h2>Most behind</h2>
       @if (cards(); as c) {
         @if (c.behindLoans > 0) {
-          <a class="more" routerLink="/loans" [queryParams]="{ filter: 'behind' }">
+          <a class="more" routerLink="/loans" [queryParams]="{ behind: true }">
             All {{ c.behindLoans }} {{ c.behindLoans === 1 ? 'loan' : 'loans' }} →
           </a>
         }

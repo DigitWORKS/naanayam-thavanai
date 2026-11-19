@@ -12,7 +12,7 @@ type Decide = (id: number, status: Exclude<HandoverStatus, 'PENDING'>, remarks: 
 @Component({
   selector: 'nt-handover-review',
   template: `
-    <dialog #dlg (close)="closed.emit()" (cancel)="busy() && $event.preventDefault()" aria-labelledby="hr-title">
+    <dialog #dlg (close)="closed.emit()" (cancel)="onCancel($event)" aria-labelledby="hr-title">
       <h2 id="hr-title">{{ handover().agentName }}'s cash · {{ dateText() }}</h2>
 
       <dl class="amounts">
@@ -29,7 +29,7 @@ type Decide = (id: number, status: Exclude<HandoverStatus, 'PENDING'>, remarks: 
         <label for="hr-remarks">Your note <span class="opt">(needed to dispute)</span></label>
         <textarea id="hr-remarks" rows="2" maxlength="255" [value]="remarks()"
                   (input)="remarks.set($any($event.target).value)"></textarea>
-        <span class="help">A note you add replaces the agent's note on this handover.</span>
+        <span class="help">{{ handover().agentName }} sees this note in the app.</span>
       </div>
 
       @if (error()) {
@@ -105,6 +105,11 @@ export class HandoverReview {
 
   constructor() {
     afterNextRender(() => this.dialog().nativeElement.showModal());
+  }
+
+  /** Esc is blocked only while saving (a handler returning false would block it always). */
+  onCancel(e: Event): void {
+    if (this.busy()) e.preventDefault();
   }
 
   async submit(status: Exclude<HandoverStatus, 'PENDING'>): Promise<void> {

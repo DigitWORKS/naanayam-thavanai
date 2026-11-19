@@ -1,0 +1,185 @@
+<nav class="crumbs" aria-label="Breadcrumb">
+  <a routerLink="/loans">Loans</a> / {{ loan()?.loanNo ?? '…' }}
+</nav>
+
+@if (notFound()) {
+  <div class="nt-card state">
+    <h1>Loan not found</h1>
+    <p class="muted">It may belong to another business, or the link is wrong.</p>
+    <a class="nt-btn nt-btn--outline" routerLink="/loans">Back to loans</a>
+  </div>
+} @else if (loadError() && !loan()) {
+  <div class="nt-card state" role="alert">
+    <p class="nt-error-text">{{ loadError() }}</p>
+    <button type="button" class="nt-btn nt-btn--outline" (click)="refresh()">Retry</button>
+  </div>
+} @else if (loan(); as l) {
+  @let v = view()!;
+  <header class="top">
+    <div class="title">
+      <div class="title-row">
+        <h1>{{ l.loanNo }}</h1>
+        <span class="nt-tag" [class]="v.statusClass">{{ v.statusLabel }}</span>
+      </div>
+      <span class="sub">
+        <a class="client" [routerLink]="['/clients', l.clientId]">{{ l.clientName }}</a>
+        @for (s of v.subtitle; track s) { · {{ s }} }
+      </span>
+    </div>
+    @if (v.active) {
+      <button type="button" class="nt-btn nt-btn--danger-text" (click)="dialog.set('default')">Mark defaulted…</button>
+      <button type="button" class="nt-btn nt-btn--outline dark" (click)="dialog.set('preclose')">Pre-close quote</button>
+      <button type="button" class="nt-btn" (click)="dialog.set('collect')">Collect payment</button>
+    }
+  </header>
+
+  <div class="layout">
+    <div class="side">
+      <section class="nt-card balance">
+        <div class="balance-row">
+          <div class="stack">
+            <span class="label">Outstanding</span>
+            <span class="big">{{ v.outstanding }}</span>
+          </div>
+          <span class="label">{{ v.paidText }}</span>
+        </div>
+        <div class="nt-bar thick" role="progressbar" [attr.aria-valuenow]="v.paidPct" aria-valuemin="0"
+             aria-valuemax="100" [attr.aria-label]="v.paidText"><div [style.width.%]="v.paidPct"></div></div>
+        @if (v.active && v.behindText) {
+          <p class="behind">{{ v.behindText }}</p>
+        }
+        @if (v.closedText) {
+          <p class="closed">{{ v.closedText }}</p>
+        }
+        @if (v.legalNote) {
+          <p class="legal"><span>Legal note</span>{{ v.legalNote }}</p>
+        }
+      </section>
+
+      <section class="nt-card facts">
+        @for (f of v.facts; track f.label) {
+          <div class="stack"><span class="label">{{ f.label }}</span><span class="fact">{{ f.value }}</span></div>
+        }
+      </section>
+
+      <section class="nt-card payments">
+        <div class="head">
+          <h2>Payments</h2>
+          <span class="label">Newest first</span>
+        </div>
+        @if (paymentsError()) {
+          <p class="muted">Could not load payments. <button type="button" class="nt-link-btn" (click)="refresh()">Retry</button></p>
+        } @else if (paymentsLoading()) {
+          <p class="muted">Loading…</p>
+        } @else {
+          @for (p of payments().rows; track p.source.id) {
+            <div class="pay" [class.reversed]="p.reversed">
+              <div class="stack grow">
+                <span class="strong">{{ p.when }}</span>
+                <span class="small">{{ p.detail }}</span>
+              </div>
+              <span class="amount">{{ p.amount }}</span>
+              @if (p.canReverse) {
+                <button type="button" class="nt-link-btn nt-link-btn--danger" (click)="dialog.set({ reverse: p.source })">
+                  Reverse
+                </button>
+              } @else {
+                <span class="spacer"></span>
+              }
+            </div>
+          } @empty {
+            <p class="muted empty">No payments yet.</p>
+          }
+          @if (payments().total > payments().rows.length) {
+            <button type="button" class="nt-link-btn more" (click)="showAllPayments.set(true)">
+              All {{ payments().total }} payments →
+            </button>
+          }
+        }
+      </section>
+    </div>
+
+    <section class="schedule">
+      <div class="head">
+        <h2>Schedule</h2>
+        @let s = schedule();
+        @if (s.collapsed) {
+          <span class="label">Showing from {{ lookBackDays }} days ago ·
+            <button type="button" class="nt-link-btn" (click)="showAllSchedule.set(true)">Show all {{ s.total }}</button>
+          </span>
+        } @else if (showAllSchedule()) {
+          <button type="button" class="nt-link-btn" (click)="showAllSchedule.set(false)">Show fewer</button>
+        }
+      </div>
+      @if (scheduleError()) {
+        <p class="muted pad">Could not load the schedule. <button type="button" class="nt-link-btn" (click)="refresh()">Retry</button></p>
+      } @else if (scheduleLoading()) {
+        <p class="muted pad">Loading…</p>
+      } @else {
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Due date</th>
+              <th scope="col" class="num">Due</th>
+              <th scope="col" class="num">Paid</th>
+              <th scope="col" class="num">Penalty</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (s.collapsed && s.before) {
+              <tr class="gap"><td colspan="6">
+                <button type="button" class="nt-link-btn" (click)="showAllSchedule.set(true)">⋯ {{ s.before }} earlier ⋯</button>
+              </td></tr>
+            }
+            @for (r of s.head; track r.seq) {
+              <ng-container *ngTemplateOutlet="row; context: { $implicit: r }" />
+            }
+            @if (s.hidden) {
+              <tr class="gap"><td colspan="6">
+                <button type="button" class="nt-link-btn" (click)="showAllSchedule.set(true)">⋯ {{ s.hidden }} more ⋯</button>
+              </td></tr>
+            }
+            @for (r of s.tail; track r.seq) {
+              <ng-container *ngTemplateOutlet="row; context: { $implicit: r }" />
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  </div>
+
+  <ng-template #row let-r>
+    <tr [class.today]="r.isToday">
+      <td class="muted">{{ r.seq }}</td>
+      <td [class.strong]="r.isToday">{{ r.date }}</td>
+      <td class="num" [class.strong]="r.isToday">{{ r.due }}</td>
+      <td class="num" [class.muted]="r.paidMuted">{{ r.paid }}</td>
+      <td class="num" [class.warn]="r.penaltyWarn" [class.muted]="!r.penaltyWarn">{{ r.penalty }}</td>
+      <td [class]="'status ' + r.statusClass">{{ r.status }}</td>
+    </tr>
+  </ng-template>
+
+  @switch (dialog()) {
+    @case ('collect') {
+      <nt-collect-payment [loan]="l" (saved)="refresh()" (closed)="dialog.set(null)" />
+    }
+    @case ('preclose') {
+      <nt-preclose-dialog [loan]="l" (saved)="refresh()" (closed)="dialog.set(null)" />
+    }
+    @case ('default') {
+      <nt-reason-dialog heading="Mark {{ l.loanNo }} defaulted?"
+                        warning="Only for a loan you have stopped collecting. The app cannot undo this."
+                        label="Legal note (what happens next)" action="Mark defaulted" [maxLength]="1000"
+                        [run]="markDefaulted" (closed)="dialog.set(null)" />
+    }
+  }
+  @if (reverseTarget(); as p) {
+    <nt-reason-dialog [heading]="reverseHeading(p)"
+                      warning="The amount goes back onto the installments it paid. Use this for a wrong entry, not for a refund."
+                      action="Reverse payment" [run]="reverse" (closed)="dialog.set(null)" />
+  }
+} @else {
+  <p class="muted">Loading…</p>
+}

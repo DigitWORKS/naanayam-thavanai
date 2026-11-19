@@ -503,7 +503,7 @@ paths:
   /loans:
     get:
       tags: [Loans]
-      summary: List loans
+      summary: List loans (newest first, within the caller's areas)
       parameters:
         - name: clientId
           in: query
@@ -514,6 +514,9 @@ paths:
         - name: areaId
           in: query
           schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/LoanFrequency'
+        - $ref: '#/components/parameters/LoanQuery'
+        - $ref: '#/components/parameters/LoanBehind'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
       responses:
@@ -546,6 +549,47 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
         '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /loans/counts:
+    get:
+      tags: [Loans]
+      summary: Loan count per status, within the caller's areas (tabs of the web loan list)
+      responses:
+        '200':
+          description: Every status is present
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ACTIVE: { type: integer }
+                  CLOSED: { type: integer }
+                  PRECLOSED: { type: integer }
+                  DEFAULTED: { type: integer }
+
+  /loans/export:
+    get:
+      tags: [Loans]
+      summary: Loan list as CSV (Owner)
+      description: >
+        Same filters as GET /loans, newest first, at most 10,000 rows. UTF-8 with BOM; every cell quoted;
+        text starting with = + - @ is prefixed with ' so spreadsheets do not run it.
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/LoanStatus' }
+        - name: areaId
+          in: query
+          schema: { type: integer, format: int64 }
+        - $ref: '#/components/parameters/LoanFrequency'
+        - $ref: '#/components/parameters/LoanQuery'
+        - $ref: '#/components/parameters/LoanBehind'
+      responses:
+        '200':
+          description: loans.csv
+          content:
+            text/csv:
+              schema: { type: string }
 
   /loans/preview:
     post:
@@ -863,7 +907,10 @@ paths:
                 status:
                   type: string
                   enum: [CONFIRMED, DISPUTED]
-                remarks: { type: string, maxLength: 255 }
+                remarks:
+                  type: string
+                  maxLength: 255
+                  description: Owner's note; stored as ownerRemarks (the agent's remarks are kept)
       responses:
         '200':
           description: Updated
@@ -999,6 +1046,20 @@ components:
       name: size
       in: query
       schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    LoanFrequency:
+      name: frequency
+      in: query
+      schema: { $ref: '#/components/schemas/Frequency' }
+    LoanQuery:
+      name: q
+      in: query
+      description: Loan no. or client name (contains), or client phone digits
+      schema: { type: string, maxLength: 50 }
+    LoanBehind:
+      name: behind
+      in: query
+      description: Only loans with arrears (an open installment past due, or a carried-forward one not due today)
+      schema: { type: boolean, default: false }
     UserId:
       name: userId
       in: path
@@ -1413,6 +1474,10 @@ components:
         areaName: { type: string }
         totalPayable: { $ref: '#/components/schemas/Money' }
         endDate: { type: string, format: date, description: Current end date including extensions }
+        clientPhone: { type: string }
+        startDate: { type: string, format: date }
+        paidCount: { type: integer, description: PAID installments }
+        installmentCount: { type: integer, description: All installments, carried-forward ones included }
     Loan:
       allOf:
         - $ref: '#/components/schemas/LoanSummary'
@@ -1434,6 +1499,7 @@ components:
             currentEndDate: { type: string, format: date }
             legalNote: { type: string, nullable: true }
             closedAt: { type: string, format: date-time, nullable: true }
+            areaName: { type: string }
     LoanPreview:
       type: object
       properties:
@@ -1467,6 +1533,11 @@ components:
         penaltyPaid: { $ref: '#/components/schemas/Money' }
         status: { $ref: '#/components/schemas/InstallmentStatus' }
         isExtension: { type: boolean }
+        extendedFrom:
+          type: integer
+          format: int64
+          nullable: true
+          description: For an extension, the id of the missed installment it carries forward
 
     # ------------------------------------------------------- collections
     DueItem:
@@ -1543,6 +1614,7 @@ components:
         - type: object
           properties:
             runningBalance: { $ref: '#/components/schemas/Money' }
+            remarks: { type: string, nullable: true, description: Payment note, or the reason of a reversal }
     SyncResult:
       type: object
       properties:
@@ -1611,7 +1683,8 @@ components:
         difference: { $ref: '#/components/schemas/Money' }
         status: { $ref: '#/components/schemas/HandoverStatus' }
         receivedBy: { type: integer, format: int64, nullable: true }
-        remarks: { type: string, nullable: true }
+        remarks: { type: string, nullable: true, description: Agent's note from submit }
+        ownerRemarks: { type: string, nullable: true, description: Owner's note from confirm / dispute }
         confirmedAt: { type: string, format: date-time, nullable: true }
 
     # ------------------------------------------------------------ reports
@@ -1661,6 +1734,7 @@ components:
             handedAmount: { $ref: '#/components/schemas/Money' }
             status: { type: string, enum: [PENDING, CONFIRMED, DISPUTED] }
             remarks: { type: string, nullable: true }
+            ownerRemarks: { type: string, nullable: true }
     BehindLoan:
       type: object
       properties:

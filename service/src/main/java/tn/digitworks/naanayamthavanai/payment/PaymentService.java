@@ -213,7 +213,7 @@ public class PaymentService {
             out.add(new LedgerEntry(p.getId(), p.getClientTxnId(), p.getLoanId(), p.getAmount(), p.getEntryType(),
                     p.getPurpose(), p.getReversalOf(), p.getMode(), p.getUpiRefNo(), offset(p.getPaidOn()),
                     p.getCollectedBy(), names.get(p.getCollectedBy()), allocationResponses(pa, instById),
-                    running, running));
+                    running, running, p.getRemarks()));
         }
         return out;
     }

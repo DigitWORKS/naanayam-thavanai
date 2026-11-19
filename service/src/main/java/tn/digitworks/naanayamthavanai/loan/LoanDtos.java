@@ -36,10 +36,20 @@ public final class LoanDtos {
     }
 
     /** Loan row for lists and the client detail; client / area names let the Loans tab show who it is. */
+    /**
+     * One row of a loan list. {@code paidCount} counts PAID installments and {@code installmentCount} all of
+     * them, carried-forward ones included ("58 of 102 days").
+     */
     public record LoanSummary(Long id, String loanNo, BigDecimal principal, Frequency frequency,
                               BigDecimal installmentAmount, BigDecimal outstanding, BigDecimal overdueAmount,
                               Loan.Status status, Long clientId, String clientName, String areaName,
-                              BigDecimal totalPayable, LocalDate endDate) {
+                              BigDecimal totalPayable, LocalDate endDate, String clientPhone, LocalDate startDate,
+                              int paidCount, int installmentCount) {
+    }
+
+    /** Filters of the loan list and its CSV export; null / false = no filter. */
+    public record LoanFilter(Long clientId, Loan.Status status, Long areaId, Frequency frequency, String q,
+                             boolean behind) {
     }
 
     public record LoanResponse(
@@ -49,25 +59,26 @@ public final class LoanDtos {
             InterestCollection interestCollection, BigDecimal interestAmount, BigDecimal disbursedAmount,
             BigDecimal totalPayable, BigDecimal totalPaid, BigDecimal pendingPenalty, int tenureCount,
             LocalDate startDate, LocalDate originalEndDate, LocalDate currentEndDate, String legalNote,
-            LocalDateTime closedAt) {
+            LocalDateTime closedAt, String clientPhone, String areaName, int paidCount, int installmentCount) {
     }
 
     public record InstallmentResponse(Long id, int seqNo, LocalDate dueDate, BigDecimal dueAmount,
                                       BigDecimal principalComponent, BigDecimal interestComponent,
                                       BigDecimal principalBalanceAfter, BigDecimal paidAmount,
                                       BigDecimal penaltyAmount, BigDecimal penaltyPaid,
-                                      InstallmentStatus status, boolean isExtension) {
+                                      InstallmentStatus status, boolean isExtension, Long extendedFrom) {
         public static InstallmentResponse of(Installment i) {
             return new InstallmentResponse(i.getId(), i.getSeqNo(), i.getDueDate(), i.getDueAmount(),
                     i.getPrincipalComponent(), i.getInterestComponent(), i.getPrincipalBalanceAfter(),
-                    i.getPaidAmount(), i.getPenaltyAmount(), i.getPenaltyPaid(), i.getStatus(), i.isExtension());
+                    i.getPaidAmount(), i.getPenaltyAmount(), i.getPenaltyPaid(), i.getStatus(), i.isExtension(),
+                    i.getExtendedFrom());
         }
 
         public static InstallmentResponse preview(LoanSchedule.Installment i) {
             BigDecimal zero = BigDecimal.ZERO.setScale(2);
             return new InstallmentResponse(null, i.seqNo(), i.dueDate(), i.dueAmount(), i.principalComponent(),
                     i.interestComponent(), i.principalBalanceAfter(), zero, zero, zero,
-                    InstallmentStatus.PENDING, false);
+                    InstallmentStatus.PENDING, false, null);
         }
     }
 

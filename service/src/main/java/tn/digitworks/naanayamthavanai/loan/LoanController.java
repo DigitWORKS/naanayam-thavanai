@@ -12,7 +12,13 @@ import tn.digitworks.naanayamthavanai.payment.PaymentService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import tn.digitworks.naanayamthavanai.loan.LoanDtos.LoanFilter;
+import tn.digitworks.naanayamthavanai.loan.schedule.LoanEnums.Frequency;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,7 +29,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/loans")
@@ -42,10 +50,37 @@ public class LoanController {
     public PageResponse<LoanSummary> list(@RequestParam(required = false) Long clientId,
                                           @RequestParam(required = false) Loan.Status status,
                                           @RequestParam(required = false) Long areaId,
+                                          @RequestParam(required = false) Frequency frequency,
+                                          @RequestParam(required = false) @Size(max = 50) String q,
+                                          @RequestParam(defaultValue = "false") boolean behind,
                                           @RequestParam(defaultValue = "0") @Min(0) int page,
                                           @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-        return service.list(clientId, status, areaId, page, size);
+        return service.list(new LoanFilter(clientId, status, areaId, frequency, q, behind), page, size);
     }
+
+    /** Loan count per status (tabs of the web loan list). */
+    @GetMapping("/counts")
+    public Map<Loan.Status, Long> counts() {
+        return service.countsByStatus();
+    }
+
+    /** The loan list as CSV, same filters, newest first, up to {@value #EXPORT_LIMIT} rows. */
+    @GetMapping(value = "/export", produces = "text/csv")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<String> export(@RequestParam(required = false) Loan.Status status,
+                                         @RequestParam(required = false) Long areaId,
+                                         @RequestParam(required = false) Frequency frequency,
+                                         @RequestParam(required = false) @Size(max = 50) String q,
+                                         @RequestParam(defaultValue = "false") boolean behind) {
+        List<LoanSummary> rows = service.listAll(new LoanFilter(null, status, areaId, frequency, q, behind),
+                EXPORT_LIMIT);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"loans.csv\"")
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .body(LoanCsv.write(rows));
+    }
+
+    static final int EXPORT_LIMIT = 10_000;
 
     /** Owners disburse loans; agents can preview. */
     @PostMapping

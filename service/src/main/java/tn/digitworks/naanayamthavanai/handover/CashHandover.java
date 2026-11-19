@@ -47,8 +47,13 @@ public class CashHandover {
     @Column(nullable = false)
     private Status status = Status.PENDING;
 
+    /** The agent's note, set on submit. */
     @Column(length = 255)
     private String remarks;
+
+    /** The owner's note, set on confirm / dispute. */
+    @Column(name = "owner_remarks", length = 255)
+    private String ownerRemarks;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -78,9 +83,7 @@ public class CashHandover {
         this.status = decision;
         this.receivedBy = ownerId;
         this.confirmedAt = at;
-        if (ownerRemarks != null && !ownerRemarks.isBlank()) {
-            this.remarks = ownerRemarks;
-        }
+        this.ownerRemarks = ownerRemarks == null || ownerRemarks.isBlank() ? null : ownerRemarks.trim();
     }
 
     public Long getId() { return id; }
@@ -91,5 +94,6 @@ public class CashHandover {
     public Long getReceivedBy() { return receivedBy; }
     public Status getStatus() { return status; }
     public String getRemarks() { return remarks; }
+    public String getOwnerRemarks() { return ownerRemarks; }
     public LocalDateTime getConfirmedAt() { return confirmedAt; }
 }

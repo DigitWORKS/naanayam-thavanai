@@ -53,7 +53,7 @@ public final class PaymentDtos {
                               Payment.EntryType entryType, Payment.Purpose purpose, Long reversalOf,
                               Payment.Mode mode, String upiRefNo, OffsetDateTime paidOn, Long collectedBy,
                               String collectedByName, List<AllocationResponse> allocations,
-                              BigDecimal balanceAfter, BigDecimal runningBalance) {
+                              BigDecimal balanceAfter, BigDecimal runningBalance, String remarks) {
     }
 
     public enum SyncStatus { CREATED, DUPLICATE, FAILED }

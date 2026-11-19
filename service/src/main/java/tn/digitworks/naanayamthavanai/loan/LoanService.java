@@ -7,6 +7,8 @@ import tn.digitworks.naanayamthavanai.client.ClientRepository;
 import tn.digitworks.naanayamthavanai.common.ApiException;
 import tn.digitworks.naanayamthavanai.common.PageResponse;
 import tn.digitworks.naanayamthavanai.loan.LoanDtos.InstallmentResponse;
+import tn.digitworks.naanayamthavanai.loan.LoanDtos.LoanFilter;
+import tn.digitworks.naanayamthavanai.loan.schedule.LoanEnums.InstallmentStatus;
 import tn.digitworks.naanayamthavanai.loan.LoanDtos.LoanCreate;
 import tn.digitworks.naanayamthavanai.loan.LoanDtos.LoanPreview;
 import tn.digitworks.naanayamthavanai.loan.LoanDtos.LoanResponse;
@@ -28,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -83,15 +86,69 @@ public class LoanService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<LoanSummary> list(Long clientId, Loan.Status status, Long areaId, int page, int size) {
+    public PageResponse<LoanSummary> list(LoanFilter filter, int page, int size) {
         long tenantId = CurrentUser.get().requireTenant();
-        AreaScope.Scope scope = areaScope.current();
-        Page<Loan> result = loans.search(tenantId, clientId, status, areaId, scope.all(), scope.areaIds(),
-                PageRequest.of(page, size));
+        LocalDate today = LocalDate.now(clock);
+        Page<Loan> result = search(tenantId, filter, today, PageRequest.of(page, size));
         Map<Long, List<Installment>> byLoan = installmentsByLoan(result.getContent());
         Map<Long, ClientNames> names = clientNames(result.getContent());
-        LocalDate today = LocalDate.now(clock);
         return PageResponse.of(result, l -> toSummary(l, byLoan.getOrDefault(l.getId(), List.of()), today, names));
+    }
+
+    /** Every loan matching the filter, newest first, at most {@code limit} (CSV export). */
+    @Transactional(readOnly = true)
+    public List<LoanSummary> listAll(LoanFilter filter, int limit) {
+        long tenantId = CurrentUser.get().requireTenant();
+        LocalDate today = LocalDate.now(clock);
+        List<LoanSummary> out = new ArrayList<>();
+        int batch = 500;
+        for (int page = 0; out.size() < limit; page++) {
+            Page<Loan> result = search(tenantId, filter, today, PageRequest.of(page, batch));
+            Map<Long, List<Installment>> byLoan = installmentsByLoan(result.getContent());
+            Map<Long, ClientNames> names = clientNames(result.getContent());
+            for (Loan l : result.getContent()) {
+                if (out.size() == limit) {
+                    break;
+                }
+                out.add(toSummary(l, byLoan.getOrDefault(l.getId(), List.of()), today, names));
+            }
+            if (!result.hasNext()) {
+                break;
+            }
+        }
+        return out;
+    }
+
+    /** Loan count per status within the caller's areas; every status is present. */
+    @Transactional(readOnly = true)
+    public Map<Loan.Status, Long> countsByStatus() {
+        long tenantId = CurrentUser.get().requireTenant();
+        AreaScope.Scope scope = areaScope.current();
+        Map<Loan.Status, Long> counts = new java.util.EnumMap<>(Loan.Status.class);
+        for (Loan.Status s : Loan.Status.values()) {
+            counts.put(s, 0L);
+        }
+        for (Object[] r : loans.countByStatus(tenantId, scope.all(), scope.areaIds())) {
+            counts.put((Loan.Status) r[0], ((Number) r[1]).longValue());
+        }
+        return counts;
+    }
+
+    private Page<Loan> search(long tenantId, LoanFilter f, LocalDate today, PageRequest page) {
+        AreaScope.Scope scope = areaScope.current();
+        String q = f.q() == null ? "" : f.q().trim();
+        String nameLike = q.isEmpty() ? null : "%" + escapeLike(q) + "%";
+        String digits = q.replaceAll("\\D", "");
+        // Phone matches on digits only, so "98410 22871" finds 9841022871; no digits = never matches.
+        String phoneLike = digits.isEmpty() ? "~" : "%" + digits + "%";
+        return loans.search(tenantId, f.clientId(), f.status(), f.areaId(), scope.all(), scope.areaIds(),
+                f.frequency(), nameLike, phoneLike, f.behind(),
+                List.of(InstallmentStatus.PENDING, InstallmentStatus.PARTIAL), today, page);
+    }
+
+    /** Escapes LIKE wildcards in user input (MySQL default escape char is backslash). */
+    private static String escapeLike(String s) {
+        return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     @Transactional(readOnly = true)
@@ -213,9 +270,10 @@ public class LoanService {
     public LoanSummary toSummary(Loan l, List<Installment> rows, LocalDate today, Map<Long, ClientNames> names) {
         LoanBalances b = LoanBalances.of(rows, today);
         ClientNames n = names.getOrDefault(l.getClientId(), ClientNames.UNKNOWN);
+        int paid = (int) rows.stream().filter(i -> i.getStatus() == InstallmentStatus.PAID).count();
         return new LoanSummary(l.getId(), l.getLoanNo(), l.getPrincipal(), l.getFrequency(), l.getInstallmentAmount(),
                 b.outstanding(), b.arrears(), l.getStatus(), l.getClientId(), n.client(), n.area(),
-                l.getTotalPayable(), l.getCurrentEndDate());
+                l.getTotalPayable(), l.getCurrentEndDate(), n.phone(), l.getStartDate(), paid, rows.size());
     }
 
     /** Client and area name for each client of the given loans, in two batched lookups. */
@@ -227,11 +285,11 @@ public class LoanService {
         Map<Long, String> areaNames = areas.findAllById(owners.stream().map(Client::getAreaId).collect(Collectors.toSet()))
                 .stream().collect(Collectors.toMap(Area::getId, Area::getName));
         return owners.stream().collect(Collectors.toMap(Client::getId,
-                c -> new ClientNames(c.getName(), areaNames.getOrDefault(c.getAreaId(), ""))));
+                c -> new ClientNames(c.getName(), areaNames.getOrDefault(c.getAreaId(), ""), c.getPhone())));
     }
 
-    public record ClientNames(String client, String area) {
-        static final ClientNames UNKNOWN = new ClientNames("", "");
+    public record ClientNames(String client, String area, String phone) {
+        static final ClientNames UNKNOWN = new ClientNames("", "", "");
     }
 
     private LoanResponse toResponse(Loan l, Client client, List<Installment> rows) {
@@ -240,7 +298,9 @@ public class LoanService {
                 b.outstanding(), b.arrears(), l.getStatus(), client.getId(), client.getName(), l.getInterestRate(),
                 l.getInterestMethod(), l.getInterestCollection(), l.getInterestAmount(), l.getDisbursedAmount(),
                 l.getTotalPayable(), payments.sumByLoanId(l.getId()).setScale(2), b.penaltyDue(), l.getTenureCount(),
-                l.getStartDate(), l.getOriginalEndDate(), l.getCurrentEndDate(), l.getLegalNote(), l.getClosedAt());
+                l.getStartDate(), l.getOriginalEndDate(), l.getCurrentEndDate(), l.getLegalNote(), l.getClosedAt(),
+                client.getPhone(), areas.findById(client.getAreaId()).map(Area::getName).orElse(""),
+                (int) rows.stream().filter(i -> i.getStatus() == InstallmentStatus.PAID).count(), rows.size());
     }
 
     private Map<Long, List<Installment>> installmentsByLoan(List<Loan> list) {
