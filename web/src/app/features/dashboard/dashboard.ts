@@ -9,6 +9,7 @@ import { Money } from '../../core/money';
 import { BusinessSummary } from '../../layout/business-summary';
 import type { AgentDay, BehindLoan, CollectionRow, Handover, HandoverStatus } from './dashboard.models';
 import { HandoverReview } from './handover-review';
+import { safeValue } from '../../core/resource';
 
 const DAY_MS = 86_400_000;
 const m = (v: string | null | undefined) => Money.fromJson(v);
@@ -89,7 +90,7 @@ export class DashboardPage {
 
   readonly agents = computed(() => {
     const me = this.auth.user()?.id;
-    return (this.agentsRes.value() ?? []).map((a) => {
+    return (safeValue(this.agentsRes) ?? []).map((a) => {
       const owner = a.role === 'OWNER';
       const cash = m(a.cash);
       const h = a.handover;
@@ -113,7 +114,7 @@ export class DashboardPage {
   // ------------------------------------------------------------ today by area
 
   readonly areas = computed(() =>
-    (this.areasRes.value() ?? [])
+    (safeValue(this.areasRes) ?? [])
       .map((r) => ({ name: r.key, collected: m(r.collected), target: m(r.target) }))
       .filter((r) => r.target.isPositive || r.collected.isPositive)
       .sort((a, b) => b.target.paise - a.target.paise || a.name.localeCompare(b.name))
@@ -131,7 +132,7 @@ export class DashboardPage {
 
   readonly handovers = computed(() => {
     const today = this.day();
-    return (this.handoversRes.value() ?? []).map((h) => {
+    return (safeValue(this.handoversRes) ?? []).map((h) => {
       const diff = m(h.difference);
       return {
         source: h,
@@ -181,7 +182,7 @@ export class DashboardPage {
   readonly behind = computed(() => {
     const d = this.day();
     const today = d ? parseDate(d) : new Date();
-    return (this.behindRes.value() ?? []).map((l) => {
+    return (safeValue(this.behindRes) ?? []).map((l) => {
       const days = Math.max(1, Math.round((today.getTime() - parseDate(l.behindSince).getTime()) / DAY_MS));
       return {
         loanId: l.loanId,

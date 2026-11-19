@@ -15,6 +15,7 @@ import {
 import { formatPhone } from '../../shared/format';
 import { PrecloseDialog } from './preclose-dialog';
 import { ReasonDialog } from './reason-dialog';
+import { safeValue } from '../../core/resource';
 
 const m = (v: string | null | undefined) => Money.fromJson(v);
 const DAY_MS = 86_400_000;
@@ -57,7 +58,7 @@ export class LoanDetailPage {
 
   readonly notFound = computed(() => apiErrorCode(this.loanRes.error()) === 'NOT_FOUND');
   readonly loadError = computed(() => (this.loanRes.error() ? apiErrorMessage(this.loanRes.error()) : ''));
-  readonly loan = computed(() => this.loanRes.value());
+  readonly loan = computed(() => safeValue(this.loanRes));
 
   readonly dialog = signal<Dialog>(null);
   readonly reverseTarget = computed(() => {
@@ -117,7 +118,7 @@ export class LoanDetailPage {
   readonly paymentsError = computed(() => !!this.ledgerRes.error());
 
   readonly payments = computed(() => {
-    const ledger = this.ledgerRes.value() ?? [];
+    const ledger = safeValue(this.ledgerRes) ?? [];
     // The server reverses payments on active and closed loans (a closed loan reopens), not pre-closures.
     const reversible = this.loan()?.status === 'ACTIVE' || this.loan()?.status === 'CLOSED';
     const reversals = new Map(ledger.filter((e) => e.entryType === 'REVERSAL').map((e) => [e.reversalOf, e]));
@@ -152,7 +153,7 @@ export class LoanDetailPage {
   readonly scheduleError = computed(() => !!this.scheduleRes.error());
 
   readonly schedule = computed(() => {
-    const list = this.scheduleRes.value() ?? [];
+    const list = safeValue(this.scheduleRes) ?? [];
     const today = isoToday();
     const seqById = new Map(list.map((i) => [i.id, i.seqNo]));
     const movedTo = new Map(list.filter((i) => i.extendedFrom !== null).map((i) => [i.extendedFrom, i.seqNo]));

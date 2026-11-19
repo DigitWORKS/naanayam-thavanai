@@ -3,6 +3,7 @@ import { computed, Injectable } from '@angular/core';
 
 import { API } from '../core/api';
 import type { Dashboard } from '../features/dashboard/dashboard.models';
+import { safeValue } from '../core/resource';
 
 
 const PLAN_LABEL = { TRIAL: 'Free trial', MONTHLY: 'Monthly plan', YEARLY: 'Yearly plan' } as const;
@@ -17,15 +18,15 @@ export class BusinessSummary {
   private readonly res = httpResource<Dashboard>(() => `${API}/reports/dashboard`);
 
   /** The whole dashboard response; undefined until loaded. */
-  readonly dashboard = this.res.value;
+  readonly dashboard = computed(() => safeValue(this.res));
   readonly isLoading = this.res.isLoading;
   readonly error = this.res.error;
 
-  readonly businessName = computed(() => this.res.value()?.businessName ?? '');
-  readonly pendingHandovers = computed(() => this.res.value()?.pendingHandovers ?? 0);
+  readonly businessName = computed(() => safeValue(this.res)?.businessName ?? '');
+  readonly pendingHandovers = computed(() => safeValue(this.res)?.pendingHandovers ?? 0);
 
   private readonly expiry = computed(() => {
-    const e = this.res.value()?.planExpiry;
+    const e = safeValue(this.res)?.planExpiry;
     return e ? new Date(`${e}T00:00:00`) : null;
   });
 
@@ -45,7 +46,7 @@ export class BusinessSummary {
 
   /** "Free trial · 28 days left", "Monthly plan · ends 16 Jan 2027" or "Plan ended 3 Oct 2026". */
   readonly planText = computed(() => {
-    const plan = this.res.value()?.plan;
+    const plan = safeValue(this.res)?.plan;
     if (!plan) return '';
     const label = PLAN_LABEL[plan];
     const days = this.daysLeft();

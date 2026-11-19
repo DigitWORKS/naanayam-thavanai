@@ -7,6 +7,7 @@ import { apiErrorCode, apiErrorMessage } from '../../core/api-error';
 import { Money } from '../../core/money';
 import { Dialog } from '../../shared/dialog';
 import { isValidUtr, LoanDetail, normaliseUtr, PaymentMode, PreclosureQuote } from './loan.models';
+import { safeValue } from '../../core/resource';
 
 /** Pre-closure quote as of today; the owner can settle the loan with it. */
 @Component({
@@ -82,7 +83,7 @@ export class PrecloseDialog {
   readonly quoteRes = httpResource<PreclosureQuote>(() => `${API}/loans/${this.loan().id}/preclosure-quote`);
   readonly quoteError = computed(() => apiErrorMessage(this.quoteRes.error(), 'Could not get the quote.'));
   readonly quote = computed(() => {
-    const q = this.quoteRes.value();
+    const q = safeValue(this.quoteRes);
     if (!q) return null;
     const m = (v: string) => Money.fromJson(v);
     return {

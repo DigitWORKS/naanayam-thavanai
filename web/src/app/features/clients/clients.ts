@@ -13,6 +13,7 @@ import type { Area, Page } from '../loans/loan.models';
 import { ClientForm } from './client-form';
 import { ClientFilter, ClientListItem } from './client.models';
 import { ClientPanel } from './client-panel';
+import { safeValue } from '../../core/resource';
 
 const PAGE_SIZE = 20;
 const FILTERS: { id: ClientFilter; label: string }[] = [
@@ -66,8 +67,8 @@ export class ClientsPage {
   }));
   private readonly areasRes = httpResource<Area[]>(() => `${API}/areas`);
 
-  readonly areas = computed(() => this.areasRes.value() ?? []);
-  readonly meta = computed(() => this.clientsRes.value()?.meta);
+  readonly areas = computed(() => safeValue(this.areasRes) ?? []);
+  readonly meta = computed(() => safeValue(this.clientsRes)?.meta);
   readonly loading = computed(() => this.clientsRes.isLoading());
   readonly error = computed(() => (this.clientsRes.error() ? apiErrorMessage(this.clientsRes.error()) : ''));
   readonly hasFilters = computed(() => !!this.q().trim() || this.filter() !== 'ALL' || this.area() !== null);
@@ -79,7 +80,7 @@ export class ClientsPage {
   });
 
   readonly rows = computed(() =>
-    (this.clientsRes.value()?.content ?? []).map((c) => {
+    (safeValue(this.clientsRes)?.content ?? []).map((c) => {
       const behind = m(c.overdueAmount);
       return {
         id: c.id,

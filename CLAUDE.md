@@ -18,8 +18,8 @@ Read this before changing code. The full plan, decisions, progress and pending w
 | `api-spec/openapi.yaml` | API contract, source of truth | OpenAPI 3.0.3 |
 | `service/` | Backend | Spring Boot 4.1.2, Java 25, Hibernate 7, Jackson 3 (`tools.jackson.*`), Gradle Kotlin DSL |
 | `db/migrations/` | Schema | MySQL 8, `utf8mb4`, Flyway (copied to `classpath:db/migration` at build) |
-| `mobile/` | Agent and owner app | Flutter (not scaffolded yet) |
-| `web/` | Owner and Super Admin panel | Angular (not scaffolded yet) |
+| `mobile/` | Agent and owner app | Flutter 3.44, Riverpod 3, Dio, sqflite (offline payment queue) |
+| `web/` | Owner and Super Admin panel | Angular 21: standalone, signals, zoneless, OnPush, Vitest |
 
 Base Java package `tn.digitworks.naanayamthavanai`, one package per domain:
 `common`, `security`, `tenant`, `user`, `area`, `client`, `loan` (+ `loan.schedule`, `loan.missed`),
@@ -35,6 +35,15 @@ SPRING_PROFILES_ACTIVE=local SUPER_ADMIN_PHONE=9xxxxxxxxx SUPER_ADMIN_PIN=xxxx .
 API `http://localhost:8080/v1`, Swagger `http://localhost:8080/v1/swagger-ui.html`.
 Env: `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET` (required outside `local`, 32+ chars),
 `SUPER_ADMIN_PHONE`, `SUPER_ADMIN_PIN`, `DOCUMENT_DIR`.
+
+## Web (`web/`)
+- `npm start` (proxies `/v1` to `localhost:8080`), `npx ng test --watch=false`.
+- Reads use `httpResource`; read its value with `safeValue(res)` (`core/resource.ts`), never `res.value()`:
+  in Angular 21 `value()` throws while the resource is in an error state, which breaks error views.
+- Money is `Money` (integer paise, `core/money.ts`); API errors via `apiErrorMessage` / `apiErrorCode`.
+- List filters live in the URL query (bound to inputs), so Back / reload / links keep them.
+- Dialogs use `nt-dialog` (native `<dialog>`). A template listener that returns `false` cancels the event,
+  so never write `(cancel)="busy() && $event.preventDefault()"`.
 
 ## Tenancy (never bypass)
 - Shared database; **every business table has `tenant_id`**.

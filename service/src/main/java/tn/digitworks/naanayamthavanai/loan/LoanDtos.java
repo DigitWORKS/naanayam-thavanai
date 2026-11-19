@@ -35,9 +35,8 @@ public final class LoanDtos {
             @NotNull LocalDate startDate) {
     }
 
-    /** Loan row for lists and the client detail; client / area names let the Loans tab show who it is. */
     /**
-     * One row of a loan list. {@code paidCount} counts PAID installments and {@code installmentCount} all of
+     * Loan row for lists and the client detail (client / area names say who it is). {@code paidCount} counts PAID installments and {@code installmentCount} all of
      * them, carried-forward ones included ("58 of 102 days").
      */
     public record LoanSummary(Long id, String loanNo, BigDecimal principal, Frequency frequency,

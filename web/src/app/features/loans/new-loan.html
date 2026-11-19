@@ -1,0 +1,192 @@
+<nav class="crumbs" aria-label="Breadcrumb"><a routerLink="/loans">Loans</a> / New loan</nav>
+<h1>New loan</h1>
+
+<div class="layout">
+  <form class="nt-card form" novalidate (submit)="$event.preventDefault(); review()">
+    <!-- client -->
+    <section class="block">
+      <h2>Client</h2>
+      @if (clientCheck(); as c) {
+        <div class="client" [class.blocked]="!!c.blocker">
+          <div class="stack grow">
+            <span class="strong">{{ c.name }}</span>
+            <span class="muted small">{{ c.line }} · {{ c.loansText }}</span>
+          </div>
+          <button type="button" class="nt-link-btn" (click)="changeClient()">Change</button>
+        </div>
+        @if (c.blocker) { <p class="blocker" role="alert">{{ c.blocker }}</p> }
+      } @else if (clientError()) {
+        <div class="client blocked">
+          <span class="grow blocker">{{ clientError() }}</span>
+          <button type="button" class="nt-link-btn" (click)="changeClient()">Choose another</button>
+        </div>
+      } @else if (clientLoading()) {
+        <p class="muted small">Loading client…</p>
+      } @else {
+        <div class="picker">
+          <label class="search">
+            <span aria-hidden="true">⌕</span>
+            <span class="visually-hidden">Find client</span>
+            <input type="search" placeholder="Find client by name or phone" autocomplete="off" [value]="search()"
+                   (input)="onSearch($any($event.target).value)" />
+          </label>
+          @if (search().trim()) {
+            <ul class="results" role="listbox" aria-label="Clients">
+              @for (r of results(); track r.id) {
+                <li><button type="button" (click)="pickClient(r.id)">
+                  <span class="strong">{{ r.name }}</span><span class="muted small">{{ r.line }}</span>
+                </button></li>
+              } @empty {
+                <li class="none muted small">{{ searching() ? 'Searching…' : 'No client found. Add them under Clients first.' }}</li>
+              }
+            </ul>
+          }
+        </div>
+        @if (touched() && !clientId()) { <span class="err">Choose a client.</span> }
+      }
+    </section>
+
+    <!-- terms -->
+    <section class="block grid">
+      <div class="nt-field">
+        <label for="nl-principal">Loan amount (₹)</label>
+        <input id="nl-principal" inputmode="decimal" autocomplete="off" placeholder="10000" [value]="principal()"
+               (input)="principal.set($any($event.target).value)" [attr.aria-invalid]="!!shown()['principal']" />
+        @if (shown()['principal']; as e) { <span class="err">{{ e }}</span> }
+      </div>
+      <div class="nt-field">
+        <label for="nl-rate">Interest (% per year)</label>
+        <input id="nl-rate" inputmode="decimal" autocomplete="off" placeholder="20" [value]="rate()"
+               (input)="rate.set($any($event.target).value)" [attr.aria-invalid]="!!shown()['rate']" />
+        @if (shown()['rate']; as e) { <span class="err">{{ e }}</span> }
+        @else if (maxRateText()) { <span class="hint">Your maximum: {{ maxRateText() }}% a year</span> }
+      </div>
+
+      <fieldset class="seg wide">
+        <legend>Interest method</legend>
+        <div class="seg-row">
+          @for (md of ['FLAT', 'REDUCING']; track md) {
+            @let allowed = !rules() || rules()!.allowedInterestMethods.includes($any(md));
+            <label [class.on]="method() === md" [class.off]="!allowed">
+              <input type="radio" name="nl-method" [value]="md" [checked]="method() === md" [disabled]="!allowed"
+                     (change)="method.set($any(md))" />
+              {{ md === 'FLAT' ? 'Flat' : 'Reducing' }}
+            </label>
+          }
+        </div>
+      </fieldset>
+
+      <fieldset class="seg wide">
+        <legend>Interest collected</legend>
+        <div class="seg-row">
+          <label [class.on]="collection() === 'ADDED_TO_REPAYMENT'">
+            <input type="radio" name="nl-coll" [checked]="collection() === 'ADDED_TO_REPAYMENT'"
+                   (change)="collection.set('ADDED_TO_REPAYMENT')" />Added to dues
+          </label>
+          <label [class.on]="collection() === 'UPFRONT_DEDUCTED'">
+            <input type="radio" name="nl-coll" [checked]="collection() === 'UPFRONT_DEDUCTED'"
+                   (change)="collection.set('UPFRONT_DEDUCTED')" />Deduct upfront
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="seg">
+        <legend>Pay</legend>
+        <div class="seg-row">
+          @for (f of frequencies; track f[0]) {
+            <label [class.on]="frequency() === f[0]">
+              <input type="radio" name="nl-freq" [checked]="frequency() === f[0]" (change)="frequency.set(f[0])" />{{ f[1] }}
+            </label>
+          }
+        </div>
+      </fieldset>
+      <div class="nt-field">
+        <label for="nl-tenure">Number of {{ frequency() === 'DAILY' ? 'days' : 'weeks' }}</label>
+        <input id="nl-tenure" inputmode="numeric" autocomplete="off" [value]="tenure()"
+               (input)="tenure.set($any($event.target).value)" [attr.aria-invalid]="!!shown()['tenure']" />
+        @if (shown()['tenure']; as e) { <span class="err">{{ e }}</span> }
+      </div>
+
+      <div class="nt-field">
+        <label for="nl-start">Start date</label>
+        <input id="nl-start" type="date" [min]="minStart" [max]="maxStart" [value]="startDate()"
+               (change)="startDate.set($any($event.target).value)" [attr.aria-invalid]="!!shown()['start']" />
+        @if (shown()['start']; as e) { <span class="err">{{ e }}</span> }
+        @else { <span class="hint">First installment is due one {{ frequency() === 'DAILY' ? 'day' : 'week' }} after this.</span> }
+      </div>
+    </section>
+
+    <div class="actions">
+      <a class="nt-btn nt-btn--outline" routerLink="/loans">Cancel</a>
+      <button type="submit" class="nt-btn" [disabled]="touched() && !canCreate()">
+        {{ preview() && previewCurrent() ? 'Create loan · give ' + preview()!.give : 'Create loan' }}
+      </button>
+    </div>
+  </form>
+
+  <aside class="preview">
+    <div class="nt-card summary" [class.stale]="!previewCurrent()">
+      <h2>Preview</h2>
+      @if (previewError()) {
+        <p class="nt-error-text small" role="alert">{{ previewError() }}</p>
+      } @else if (preview(); as p) {
+        <div class="give">
+          <span class="muted small">Give the client</span>
+          <span class="big">{{ p.give }}</span>
+        </div>
+        <dl class="lines">
+          <dt>Interest</dt><dd>{{ p.interest }}</dd>
+          <dt>Total to collect</dt><dd>{{ p.total }}</dd>
+          <dt>Installment</dt><dd>{{ p.installment }}</dd>
+          <dt>Installments</dt><dd>{{ p.count }}</dd>
+          <dt>Last due</dt><dd>{{ p.ends }}</dd>
+        </dl>
+      } @else {
+        <p class="muted small">Choose a client and enter the amount, rate and tenure to see the schedule.</p>
+      }
+    </div>
+
+    @if (preview(); as p) {
+      <div class="nt-card schedule" [class.stale]="!previewCurrent()">
+        <div class="head">
+          <h2>Schedule</h2>
+          @if (p.hidden) {
+            <button type="button" class="nt-link-btn" (click)="showAllRows.set(true)">Show all</button>
+          } @else if (showAllRows()) {
+            <button type="button" class="nt-link-btn" (click)="showAllRows.set(false)">Show fewer</button>
+          }
+        </div>
+        <table>
+          <thead><tr><th scope="col">#</th><th scope="col">Due date</th><th scope="col" class="num">Due</th></tr></thead>
+          <tbody>
+            @for (r of p.head; track r.seq) {
+              <tr><td class="muted">{{ r.seq }}</td><td>{{ r.date }}</td><td class="num">{{ r.due }}</td></tr>
+            }
+            @if (p.hidden) {
+              <tr class="gap"><td colspan="3">
+                <button type="button" class="nt-link-btn" (click)="showAllRows.set(true)">⋯ {{ p.hidden }} more ⋯</button>
+              </td></tr>
+            }
+            @for (r of p.tail; track r.seq) {
+              <tr><td class="muted">{{ r.seq }}</td><td>{{ r.date }}</td><td class="num">{{ r.due }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </aside>
+</div>
+
+@if (confirming() && preview(); as p) {
+  <nt-dialog heading="Create loan?" [busy]="busy()" (closed)="confirming.set(false)">
+    <div class="confirm">
+      <p>Give <strong>{{ p.give }}</strong> to <strong>{{ clientCheck()?.name }}</strong> now.</p>
+      <p class="muted">{{ p.installment }} × {{ p.count }}, total {{ p.total }}. Last due {{ p.ends }}.</p>
+      @if (error()) { <p class="nt-error-text" role="alert">{{ error() }}</p> }
+      <div class="actions">
+        <button type="button" class="nt-btn nt-btn--outline" [disabled]="busy()" (click)="confirmDialog()?.close()">Back</button>
+        <button type="button" class="nt-btn" [disabled]="busy()" (click)="create()">{{ busy() ? 'Creating…' : 'Create loan' }}</button>
+      </div>
+    </div>
+  </nt-dialog>
+}

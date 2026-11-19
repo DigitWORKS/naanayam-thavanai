@@ -12,6 +12,7 @@ import type { Area } from '../loans/loan.models';
 import { FREQUENCY_LABEL } from '../loans/loan.models';
 import { ClientForm } from './client-form';
 import { ClientDetail, ClientDocument, DOC_LABEL, SettingsLite } from './client.models';
+import { safeValue } from '../../core/resource';
 
 const m = (v: string | null | undefined) => Money.fromJson(v);
 const shortDate = (iso: string) =>
@@ -39,8 +40,8 @@ export class ClientPanel {
   private readonly settingsRes = httpResource<SettingsLite>(() => `${API}/settings`);
   private readonly areasRes = httpResource<Area[]>(() => `${API}/areas`);
 
-  readonly areas = computed(() => this.areasRes.value() ?? []);
-  readonly client = computed(() => this.clientRes.value());
+  readonly areas = computed(() => safeValue(this.areasRes) ?? []);
+  readonly client = computed(() => safeValue(this.clientRes));
   readonly notFound = computed(() => apiErrorCode(this.clientRes.error()) === 'NOT_FOUND');
   readonly loadError = computed(() => (this.clientRes.error() ? apiErrorMessage(this.clientRes.error()) : ''));
   /** Keeps the old client on screen (dimmed) while the next one loads. */
@@ -51,7 +52,7 @@ export class ClientPanel {
   readonly view = computed(() => {
     const c = this.client();
     if (!c) return null;
-    const max = this.settingsRes.value()?.maxActiveLoansPerClient;
+    const max = safeValue(this.settingsRes)?.maxActiveLoansPerClient;
     const count = c.activeLoans.length;
     const initials = c.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
     return {
@@ -94,7 +95,7 @@ export class ClientPanel {
   });
 
   readonly docs = computed(() =>
-    (this.docsRes.value() ?? []).map((d) => ({
+    (safeValue(this.docsRes) ?? []).map((d) => ({
       source: d,
       label: DOC_LABEL[d.docType],
       date: dateOf(d.uploadedAt, { day: 'numeric', month: 'short', year: 'numeric' }),

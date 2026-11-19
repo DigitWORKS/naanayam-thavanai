@@ -41,7 +41,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/clients/clients').then((m) => m.ClientsPage),
         title: 'Clients · Naanayam Thavanai',
       },
-      ownerPage('loans/new', 'New loan'),
+      {
+        path: 'loans/new',
+        loadComponent: () => import('./features/loans/new-loan').then((m) => m.NewLoanPage),
+        title: 'New loan · Naanayam Thavanai',
+      },
       {
         path: 'loans/:loanId',
         loadComponent: () => import('./features/loans/loan-detail').then((m) => m.LoanDetailPage),

@@ -14,6 +14,7 @@ import { Pager } from '../../shared/pager';
 import {
   Area, Frequency, FREQUENCY_LABEL, FREQUENCY_UNIT, LoanStatus, LoanSummary, Page, STATUS_LABEL,
 } from './loan.models';
+import { safeValue } from '../../core/resource';
 
 const PAGE_SIZE = 20;
 const TABS: LoanStatus[] = ['ACTIVE', 'CLOSED', 'PRECLOSED', 'DEFAULTED'];
@@ -73,7 +74,7 @@ export class LoansPage {
   private readonly countsRes = httpResource<Record<LoanStatus, number>>(() => `${API}/loans/counts`);
   private readonly areasRes = httpResource<Area[]>(() => `${API}/areas`);
 
-  readonly areas = computed(() => this.areasRes.value() ?? []);
+  readonly areas = computed(() => safeValue(this.areasRes) ?? []);
   readonly frequencies = Object.entries(FREQUENCY_LABEL) as [Frequency, string][];
 
   readonly headerText = computed(() => {
@@ -83,7 +84,7 @@ export class LoansPage {
   });
 
   readonly tabs = computed(() => {
-    const counts = this.countsRes.value();
+    const counts = safeValue(this.countsRes);
     return TABS.map((s) => ({ id: s, label: STATUS_LABEL[s], count: counts?.[s] }));
   });
 
@@ -91,7 +92,7 @@ export class LoansPage {
   readonly error = computed(() => (this.loansRes.error() ? apiErrorMessage(this.loansRes.error()) : ''));
 
   readonly rows = computed(() =>
-    (this.loansRes.value()?.content ?? []).map((l) => {
+    (safeValue(this.loansRes)?.content ?? []).map((l) => {
       const behind = m(l.overdueAmount);
       const unit = FREQUENCY_UNIT[l.frequency][l.installmentCount === 1 ? 0 : 1];
       return {
@@ -110,7 +111,7 @@ export class LoansPage {
       };
     }));
 
-  readonly meta = computed(() => this.loansRes.value()?.meta);
+  readonly meta = computed(() => safeValue(this.loansRes)?.meta);
 
   readonly hasFilters = computed(() =>
     !!this.q().trim() || this.area() !== null || !!this.frequency() || this.behind());

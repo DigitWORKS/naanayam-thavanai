@@ -246,7 +246,16 @@ API clients generated from `api-spec/openapi.yaml`:
       Not yet on web: document upload (with the client photos item).
       Backend: client detail + consentVersion, createdAt; PATCH /clients accepts "" to clear alt / guarantor
       mobile (was a 400).
-- [ ] Web next: pages — cash handovers, agents & areas, settings, reports, new loan, Super Admin financiers;
+- [~] Web slice 4 written (to verify): New loan (/loans/new, ?clientId= preselects; no web board, the
+      mobile screen laid out wide) — client search + card (phone, area, "n active loans of max"; blocks an
+      inactive client or one at the limit), amount, rate with the max from Settings, method (disallowed one
+      greyed), interest collected, daily / weekly, number of days / weeks, start date (±30 days, first due one
+      period later); live preview (POST /loans/preview, 400 ms debounce, stale preview dimmed): give the
+      client, interest, total, installment, count, last due, schedule (first 5 + last 2, Show all); confirm
+      dialog, then opens the new loan. Fixed across all web pages: resource value() throws in the error state
+      (Angular 21), so not-found / error views crashed instead of showing — now safeValue() everywhere
+      (core/resource.ts, with a spec). CLAUDE.md: stack rows for mobile / web, Web conventions section.
+- [ ] Web next: pages — cash handovers, agents & areas, settings, reports, Super Admin financiers;
       with their API gaps (area client counts and agents; admin search and expiring soon; owner PIN reset;
       agent's day cash list; income export).
 - [ ] Tamil version: no separate design; done in code (Flutter ARB / Angular i18n) after the web app and the
