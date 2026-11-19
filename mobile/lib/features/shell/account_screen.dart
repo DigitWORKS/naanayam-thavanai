@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_models.dart';
+import '../auth/change_pin_screen.dart';
 import '../sync/payment_queue.dart';
 
-/// Signed-in user and log out. Used as the agent's "More" tab and, until business settings are
-/// built, the owner's "Settings" tab.
+/// Signed-in user, change PIN and log out. The "More" tab for agents and owners.
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key, required this.user, required this.title, this.note, this.links = const []});
 
@@ -42,6 +42,7 @@ class AccountScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final phone = user.phone.length == 10 ? '+91 ${user.phone.substring(0, 5)} ${user.phone.substring(5)}' : user.phone;
     final role = user.isOwner ? 'Owner' : 'Agent';
+    final others = ref.watch(paymentQueueProvider.select((q) => q.othersCount));
 
     return Scaffold(
       appBar: AppBar(title: Text(title, style: AppTheme.heading(22))),
@@ -81,6 +82,27 @@ class AccountScreen extends ConsumerWidget {
                 leading: const Icon(Icons.place_outlined),
                 title: const Text('My areas'),
                 subtitle: Text(user.areas.map((a) => a.name).join(', ')),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.pin_outlined),
+              title: const Text('Change PIN'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ChangePinScreen())),
+            ),
+          ),
+          if (others > 0) ...[
+            const SizedBox(height: 12),
+            Card(
+              color: AppColors.warningTint,
+              child: ListTile(
+                leading: const Icon(Icons.phone_android, color: AppColors.warning),
+                title: Text('$others ${others == 1 ? 'payment' : 'payments'} saved by another login'),
+                subtitle: const Text('Recorded on this phone by someone else and not sent yet. '
+                    'They are sent when that person logs in on this phone.'),
               ),
             ),
           ],

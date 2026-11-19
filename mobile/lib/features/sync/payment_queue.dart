@@ -16,7 +16,8 @@ import 'pending_payment.dart';
 import 'sync_outcome.dart';
 
 class QueueState {
-  const QueueState({this.items = const [], this.syncing = false, this.offline = false, this.lastSyncedAt});
+  const QueueState(
+      {this.items = const [], this.syncing = false, this.offline = false, this.lastSyncedAt, this.othersCount = 0});
 
   /// The signed-in user's queued payments, oldest first.
   final List<PendingPayment> items;
@@ -26,6 +27,9 @@ class QueueState {
   final bool offline;
   final DateTime? lastSyncedAt;
 
+  /// Payments saved on this phone by another login; only that user's session sends them.
+  final int othersCount;
+
   List<PendingPayment> get waiting => items.where((i) => !i.needsAttention).toList();
   List<PendingPayment> get failed => items.where((i) => i.needsAttention).toList();
   bool get isEmpty => items.isEmpty;
@@ -33,11 +37,14 @@ class QueueState {
   /// Amount waiting on the phone for one loan (shown on the Today list).
   Money waitingFor(int loanId) => items.where((i) => i.loanId == loanId).map((i) => i.amount).sum();
 
-  QueueState copyWith({List<PendingPayment>? items, bool? syncing, bool? offline, DateTime? lastSyncedAt}) => QueueState(
+  QueueState copyWith(
+          {List<PendingPayment>? items, bool? syncing, bool? offline, DateTime? lastSyncedAt, int? othersCount}) =>
+      QueueState(
         items: items ?? this.items,
         syncing: syncing ?? this.syncing,
         offline: offline ?? this.offline,
         lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+        othersCount: othersCount ?? this.othersCount,
       );
 }
 
@@ -83,7 +90,8 @@ class PaymentQueue extends Notifier<QueueState> {
     final uid = _userId;
     if (uid == null) return;
     final items = await _store.forUser(uid);
-    if (uid == _userId) state = state.copyWith(items: items);
+    final others = await _store.countOthers(uid);
+    if (uid == _userId) state = state.copyWith(items: items, othersCount: others);
   }
 
   /// Saves a payment that could not be sent, then tries to send it right away.

@@ -62,6 +62,24 @@ class AuthController extends Notifier<AuthState> {
     await _signIn(tokens);
   }
 
+  /// Changes the signed-in user's PIN. The server signs out every other device and returns new tokens
+  /// for this one; the user is unchanged, so the session (and open screens) carry on.
+  Future<void> changePin(String currentPin, String newPin) async {
+    final dio = ref.read(apiClientProvider);
+    final tokens = await ApiError.guard(() async {
+      final res = await dio.post<Map<String, dynamic>>(
+        '/auth/change-pin',
+        data: {'currentPin': currentPin, 'newPin': newPin},
+      );
+      return TokenResponse.fromJson(res.data!);
+    });
+    await ref.read(tokenStoreProvider).save(
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          userJson: tokens.userJson,
+        );
+  }
+
   Future<void> _signIn(TokenResponse tokens) async {
     await ref.read(tokenStoreProvider).save(
           accessToken: tokens.accessToken,

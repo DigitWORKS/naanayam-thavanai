@@ -276,8 +276,8 @@ API clients generated from `api-spec/openapi.yaml`:
       refresh and on every request (TokenState: one primary-key lookup per request; TokenStateTest). Tokens
       issued before V10 count as version 0, so deploying signs nobody out.
       Backend: GET /areas/overview (owner) — every area with active client count and active agents. Spec 51.
-      Known (mobile): payments queued offline stay on the phone after sign-out and upload under whoever logs
-      in next on that phone; should be tied to the user who recorded them.
+      Mobile offline queue: each saved payment carries the recording user's id; only that user's session
+      loads and sends it (checked; the earlier note here was wrong).
 - [~] Web slice 7 written (to verify): Settings (board "Web settings") — plan card (plan, ends, days left;
       business, owner, licence, records kept; Upgrade disabled until payments exist); Interest & loans (cap,
       allowed methods, active loans per client stepper); Late penalty (on/off, fixed ₹ / %, value, grace days,
@@ -289,7 +289,7 @@ API clients generated from `api-spec/openapi.yaml`:
       wrong PIN = 422 WRONG_PIN, not 401; signs out other devices via token version; returns new tokens).
       Security fix: login had no attempt limit (a 4-digit PIN is 10,000 guesses) — now 10 per mobile number
       per 15 min, change-PIN 5 per user per 15 min, 429 TOO_MANY_ATTEMPTS (in memory, per server instance).
-      Spec 53 operations. Mobile can use change-pin later (its Settings has no PIN change yet).
+      Spec 53 operations. Mobile change-PIN: Flutter slice 9.
 - [~] Web slice 8 written (to verify): Reports (boards "Web reports" / "Web income for tax"), tabs Collections
       | Income for tax. Collections: Today / This week (Monday start) / This month / Custom (≤ 1 year), group by
       Day / Agent / Area, all in the URL; totals (target, collected % of target, cash, UPI, payments); day chart
@@ -338,6 +338,11 @@ API clients generated from `api-spec/openapi.yaml`:
       refresh), record payment (cash / UPI + 12-digit UTR, quick amounts, idempotent `clientTxnId`, form locks
       after an unknown outcome). Money as integer paise. Owners currently land on the same Today list.
 - [x] Swagger UI "Authorize" (bearer JWT) via `common/OpenApiConfig.java`.
+- [~] Flutter slice 9 written (to verify): Change PIN under More (owner and agent) — current PIN, new PIN twice,
+      4–6 digits; WRONG_PIN / SAME_PIN / TOO_MANY_ATTEMPTS shown on the right box; new tokens saved so this
+      phone stays signed in and other phones are signed out. More also shows "N payments saved by another
+      login" when someone else's unsent payments are on this phone (they are sent only when that person
+      logs in here).
 - [~] Flutter slice 8 written (to verify): offline payment queue. A payment that gets no response is saved on the
       phone (sqflite, table pending_payment, keyed by clientTxnId and the collecting user) and sent with
       POST /payments/sync on app start, resume, every minute while waiting, after saving, pull to refresh and

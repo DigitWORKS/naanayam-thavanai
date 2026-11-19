@@ -35,6 +35,13 @@ class PaymentQueueStore {
     return rows.map(PendingPayment.fromRow).toList();
   }
 
+  /// Payments saved on this phone by other logins. They stay here until that user logs in again.
+  Future<int> countOthers(int userId) async {
+    final rows = await (await _database)
+        .rawQuery('SELECT COUNT(*) AS n FROM pending_payment WHERE user_id <> ?', [userId]);
+    return (rows.first['n'] as int?) ?? 0;
+  }
+
   /// Ignores a second save of the same clientTxnId (the payment is already queued).
   Future<void> insert(PendingPayment item) async =>
       (await _database).insert('pending_payment', item.toRow(), conflictAlgorithm: ConflictAlgorithm.ignore);
