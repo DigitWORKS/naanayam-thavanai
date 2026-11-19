@@ -7,9 +7,9 @@ Read this before changing code. The full plan, decisions, progress and pending w
 
 ## Product
 - Multi-tenant SaaS for small lending businesses that collect **daily or weekly** installments.
-- **Tenant = business** (see Words). Users: `SUPER_ADMIN` (DigitWorks, no tenant), `OWNER` (runs the business), `AGENT` (field collector).
+- **Tenant = business** (see Words). Users: `SUPER_ADMIN` (DigitWORKS, no tenant), `OWNER` (runs the business), `AGENT` (field collector).
 - Name: Naanayam Thavanai (நாணயம் தவணை).
-  - Mobile app ID (Play Store / App Store): `apps.digitworks.naanayamthavanai` (DigitWorks pattern `apps.digitworks.<app>`).
+  - Mobile app ID (Play Store / App Store): `apps.digitworks.naanayamthavanai` (DigitWORKS pattern `apps.digitworks.<app>`).
   - Backend Java package and Gradle group: `tn.digitworks.naanayamthavanai` (same pattern as `fieldnex`: `tn.digitworks.<app>`).
 
 ## Stack and layout

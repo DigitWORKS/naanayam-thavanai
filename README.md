@@ -1,6 +1,6 @@
 # Naanayam Thavanai (நாணயம் தவணை)
 
-Multi-tenant lending and daily/weekly collection app for financiers. DigitWorks.
+Multi-tenant lending and daily/weekly collection app for financiers. DigitWORKS.
 
 App ID: `apps.digitworks.naanayamthavanai`
 

@@ -35,7 +35,7 @@ API clients generated from `api-spec/openapi.yaml`:
 ## 2. Decisions
 
 ### Compliance (confirmed with the owner / CA)
-- Most financiers hold a money-lending licence: stored as `tenant.licence_no`. DigitWorks provides software
+- Most financiers hold a money-lending licence: stored as `tenant.licence_no`. DigitWORKS provides software
   only; each financier is responsible for their licence and lending practices (terms of service).
 - Maximum legal interest rate is **configurable per tenant** (`tenant_settings.max_interest_rate`, % p.a.);
   loans above it are rejected.
@@ -353,7 +353,7 @@ API clients generated from `api-spec/openapi.yaml`:
       UPI totals, cash payment count, last cash time, existing handover; spec now 45 operations.
       Deferred: "See list" of today's cash payments; handing over a previous unsubmitted day.
 - [~] Flutter slice 6 written (to verify): Settings (owner, More → Settings; design board 13) — plan card (plan,
-      expiry, days left; Upgrade explains that DigitWorks updates plans until billing exists), interest cap + allowed
+      expiry, days left; Upgrade explains that DigitWORKS updates plans until billing exists), interest cap + allowed
       methods, active loans per client stepper, late penalty (on/off, fixed ₹ / % of missed amount, grace days,
       optional cap per loan, "applies from" note), payment order + where extra money goes, pre-closure (on/off,
       rebate future interest, no charge / fixed / %), record retention read-only; unsaved-changes guard; saving

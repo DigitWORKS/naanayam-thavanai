@@ -3,7 +3,7 @@ info:
   title: Naanayam Thavanai API
   version: 1.0.0
   description: |
-    Multi-tenant lending and collection API (DigitWorks).
+    Multi-tenant lending and collection API (DigitWORKS).
     - tenant_id is always taken from the JWT, never from path, query or body.
     - Money values are decimal strings (e.g. "1250.00") to avoid floating-point errors.
     - Dates are ISO-8601; business timezone is Asia/Kolkata.
