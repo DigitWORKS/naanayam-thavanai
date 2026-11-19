@@ -112,7 +112,7 @@ public class AuthService {
             Tenant tenant = tenants.findById(user.getTenantId()).orElseThrow(() -> ApiException.notFound("Tenant"));
             if (!tenant.isUsable(LocalDate.now(clock))) {
                 throw new ApiException(HttpStatus.FORBIDDEN, "TENANT_INACTIVE",
-                        "This financier account is suspended or its plan has expired");
+                        "This business account is suspended or its plan has ended");
             }
         }
     }

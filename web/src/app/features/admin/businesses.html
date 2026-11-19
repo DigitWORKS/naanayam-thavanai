@@ -1,0 +1,86 @@
+<header class="top">
+  <div class="title">
+    <h1>Businesses</h1>
+    <span class="muted">Businesses using Naanayam Thavanai. You see plans and status only, never their clients or loans.</span>
+  </div>
+  <button type="button" class="nt-btn" (click)="adding.set(true)">+ Add business</button>
+</header>
+
+<section class="stats">
+  @let s = summary();
+  <button type="button" class="stat" [class.on]="show() === 'ALL'" (click)="setFilter('ALL')">
+    <span class="label">All businesses</span><span class="value">{{ s?.all ?? '…' }}</span></button>
+  <button type="button" class="stat" [class.on]="show() === 'TRIAL'" (click)="setFilter('TRIAL')">
+    <span class="label">On trial</span><span class="value">{{ s?.trial ?? '…' }}</span></button>
+  <button type="button" class="stat" [class.on]="show() === 'EXPIRING'" (click)="setFilter('EXPIRING')">
+    <span class="label">Expiring in 7 days</span><span class="value" [class.warn]="!!s?.expiringSoon">{{ s?.expiringSoon ?? '…' }}</span></button>
+  <button type="button" class="stat" [class.on]="show() === 'SUSPENDED'" (click)="setFilter('SUSPENDED')">
+    <span class="label">Suspended</span><span class="value" [class.danger]="!!s?.suspended">{{ s?.suspended ?? '…' }}</span></button>
+</section>
+
+<div class="body">
+  <section class="list">
+    <div class="filters">
+      <label class="search">
+        <span aria-hidden="true">⌕</span>
+        <span class="visually-hidden">Search businesses</span>
+        <input type="search" placeholder="Business, owner or phone" [value]="searchText()" (input)="onSearch($any($event.target).value)" />
+      </label>
+      <div class="chips" role="group" aria-label="Show">
+        @for (f of filters; track f.id) {
+          <button type="button" class="chip" [class.on]="show() === f.id" [attr.aria-pressed]="show() === f.id"
+                  (click)="setFilter(f.id)">{{ f.label }}</button>
+        }
+      </div>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Business</th>
+            <th scope="col">Owner</th>
+            <th scope="col">Plan</th>
+            <th scope="col">Expires</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody [class.stale]="loading() && rows().length">
+          @for (r of rows(); track r.id) {
+            <tr [class.selected]="r.selected" (click)="open(r.id)">
+              <td>
+                <button type="button" class="name" [attr.aria-current]="r.selected ? 'true' : null"
+                        (click)="$event.stopPropagation(); open(r.id)">{{ r.name }}</button><br />
+                <span class="small muted">{{ r.since }}</span>
+              </td>
+              <td><span class="strong">{{ r.owner }}</span><br /><span class="small muted">{{ r.phone }}</span></td>
+              <td>{{ r.plan }}</td>
+              <td class="nowrap" [class]="r.expiresClass">{{ r.expires }}</td>
+              <td><span class="nt-tag" [class]="r.statusClass">{{ r.status }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="empty">
+              @if (error()) {
+                <span class="nt-error-text">{{ error() }}</span>
+                <button type="button" class="nt-link-btn" (click)="retry()">Retry</button>
+              } @else if (loading()) { Loading… }
+              @else if (hasFilters()) { No businesses match. <button type="button" class="nt-link-btn" (click)="clearFilters()">Clear filters</button> }
+              @else { No businesses yet. }
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <nt-pager [meta]="meta()" (pageChange)="goPage($event)" />
+  </section>
+
+  @if (selected(); as x) {
+    <nt-business-panel class="panel" [tenant]="x" (saved)="onSaved($event)" (closed)="close()" />
+  } @else {
+    <aside class="panel empty-panel"><p class="muted">Pick a business to change their plan, expiry or licence, or to suspend them.</p></aside>
+  }
+</div>
+
+@if (adding()) {
+  <nt-business-form (saved)="onSaved($event)" (closed)="adding.set(false)" />
+}

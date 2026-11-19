@@ -317,7 +317,10 @@ API clients generated from `api-spec/openapi.yaml`:
       Security fix: suspending a financier, or its plan ending, only blocked new logins and refreshes — access
       tokens kept working up to 12 h. The per-request token check now also requires the financier to be usable
       (same rule as Tenant.isUsable; TokenStateTest). Spec 54 operations.
-      The web app has no placeholder pages left (features/placeholder can be deleted).
+      The web app has no placeholder pages left (features/placeholder can be deleted). Files renamed: features/admin/businesses.*, business-panel.*, business-form.ts.
+- [x] Naming: the UI says "business" instead of "financier" (Super Admin › Businesses at /admin/businesses;
+      /admin/financiers redirects; web login hint; mobile "Ask the business owner to reset it"; server
+      messages). Code / API keep "tenant". Rule in CLAUDE.md › Words.
 - [ ] Web: all pages in the design are built; next is verifying slices 1–9 on the real backend.
 - [ ] Tamil version: no separate design; done in code (Flutter ARB / Angular i18n) after the web app and the
       remaining functionality are complete. Noto Sans Tamil is already in both designs.

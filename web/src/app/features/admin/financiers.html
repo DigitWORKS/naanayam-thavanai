@@ -1,15 +1,15 @@
 <header class="top">
   <div class="title">
-    <h1>Financiers</h1>
+    <h1>Businesses</h1>
     <span class="muted">Businesses using Naanayam Thavanai. You see plans and status only, never their clients or loans.</span>
   </div>
-  <button type="button" class="nt-btn" (click)="adding.set(true)">+ Add financier</button>
+  <button type="button" class="nt-btn" (click)="adding.set(true)">+ Add business</button>
 </header>
 
 <section class="stats">
   @let s = summary();
   <button type="button" class="stat" [class.on]="show() === 'ALL'" (click)="setFilter('ALL')">
-    <span class="label">All financiers</span><span class="value">{{ s?.all ?? '…' }}</span></button>
+    <span class="label">All businesses</span><span class="value">{{ s?.all ?? '…' }}</span></button>
   <button type="button" class="stat" [class.on]="show() === 'TRIAL'" (click)="setFilter('TRIAL')">
     <span class="label">On trial</span><span class="value">{{ s?.trial ?? '…' }}</span></button>
   <button type="button" class="stat" [class.on]="show() === 'EXPIRING'" (click)="setFilter('EXPIRING')">
@@ -23,7 +23,7 @@
     <div class="filters">
       <label class="search">
         <span aria-hidden="true">⌕</span>
-        <span class="visually-hidden">Search financiers</span>
+        <span class="visually-hidden">Search businesses</span>
         <input type="search" placeholder="Business, owner or phone" [value]="searchText()" (input)="onSearch($any($event.target).value)" />
       </label>
       <div class="chips" role="group" aria-label="Show">
@@ -38,7 +38,7 @@
       <table>
         <thead>
           <tr>
-            <th scope="col">Financier</th>
+            <th scope="col">Business</th>
             <th scope="col">Owner</th>
             <th scope="col">Plan</th>
             <th scope="col">Expires</th>
@@ -64,8 +64,8 @@
                 <span class="nt-error-text">{{ error() }}</span>
                 <button type="button" class="nt-link-btn" (click)="retry()">Retry</button>
               } @else if (loading()) { Loading… }
-              @else if (hasFilters()) { No financiers match. <button type="button" class="nt-link-btn" (click)="clearFilters()">Clear filters</button> }
-              @else { No financiers yet. }
+              @else if (hasFilters()) { No businesses match. <button type="button" class="nt-link-btn" (click)="clearFilters()">Clear filters</button> }
+              @else { No businesses yet. }
             </td></tr>
           }
         </tbody>
@@ -77,7 +77,7 @@
   @if (selected(); as x) {
     <nt-financier-panel class="panel" [tenant]="x" (saved)="onSaved($event)" (closed)="close()" />
   } @else {
-    <aside class="panel empty-panel"><p class="muted">Pick a financier to change their plan, expiry or licence, or to suspend them.</p></aside>
+    <aside class="panel empty-panel"><p class="muted">Pick a business to change their plan, expiry or licence, or to suspend them.</p></aside>
   }
 </div>
 

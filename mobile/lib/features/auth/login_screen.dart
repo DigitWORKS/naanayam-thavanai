@@ -112,7 +112,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const Spacer(),
                       const SizedBox(height: 32),
                       const Text(
-                        'Forgot your PIN? Ask your financier to reset it.',
+                        'Forgot your PIN? Ask the business owner to reset it.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             fontSize: 14, color: AppColors.muted, height: 1.5),

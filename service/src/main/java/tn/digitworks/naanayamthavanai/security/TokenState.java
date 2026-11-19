@@ -22,7 +22,7 @@ import java.util.List;
 public class TokenState implements OAuth2TokenValidator<Jwt> {
 
     private static final OAuth2Error REVOKED =
-            new OAuth2Error("invalid_token", "Signed out: account deactivated, PIN changed, or financier suspended / plan ended", null);
+            new OAuth2Error("invalid_token", "Signed out: account deactivated, PIN changed, or business suspended / plan ended", null);
 
     private final AppUserRepository users;
     private final Clock clock;

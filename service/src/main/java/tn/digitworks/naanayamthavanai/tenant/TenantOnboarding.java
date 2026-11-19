@@ -50,7 +50,7 @@ public class TenantOnboarding {
     @Transactional
     public Created create(NewFinancier in) {
         if (tenants.existsByPhone(in.phone())) {
-            throw ApiException.conflict("TENANT_EXISTS", "A financier with this phone number already exists");
+            throw ApiException.conflict("TENANT_EXISTS", "A business with this phone number already exists");
         }
         if (users.existsByPhone(in.phone())) {
             throw ApiException.conflict("PHONE_IN_USE", "This phone number is already used by another login");

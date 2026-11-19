@@ -15,11 +15,11 @@ export const routes: Routes = [
     loadComponent: () => import('./layout/admin-shell/admin-shell').then((m) => m.AdminShell),
     children: [
       {
-        path: 'financiers',
-        loadComponent: () => import('./features/admin/financiers').then((m) => m.FinanciersPage),
-        title: 'Financiers · Naanayam Thavanai',
+        path: 'businesses',
+        loadComponent: () => import('./features/admin/businesses').then((m) => m.BusinessesPage),
+        title: 'Businesses · Naanayam Thavanai',
       },
-      { path: '', pathMatch: 'full', redirectTo: 'financiers' },
+      { path: '', pathMatch: 'full', redirectTo: 'businesses' },
     ],
   },
   {

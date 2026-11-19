@@ -88,9 +88,9 @@ paths:
   /auth/register:
     post:
       tags: [Auth]
-      summary: Self-registration of a financier (public)
+      summary: Self-registration of a business (public)
       description: |
-        Creates the financier on a 30-day free trial, its OWNER login and default settings, and signs the
+        Creates the business on a 30-day free trial, its OWNER login and default settings, and signs the
         owner in. Rate-limited per client IP (default 5 per hour). Mobile OTP verification is planned.
       security: []
       requestBody:
@@ -1397,7 +1397,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/TenantStatus'
           description: >
-            SUSPENDED suspends: the financier's users are signed out on their next request and cannot log in.
+            SUSPENDED suspends: the business's users are signed out on their next request and cannot log in.
             Any other value lifts a suspension; the status then follows the plan (TRIAL for a trial).
         plan:
           allOf:

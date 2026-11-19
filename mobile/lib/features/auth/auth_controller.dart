@@ -48,7 +48,7 @@ class AuthController extends Notifier<AuthState> {
     await _signIn(tokens);
   }
 
-  /// Self-registration: creates the financier on the free trial and signs the owner in.
+  /// Self-registration: creates the business on the free trial and signs the owner in.
   Future<void> register(RegisterInput input) async {
     final dio = ref.read(apiClientProvider);
     final tokens = await ApiError.guard(() async {

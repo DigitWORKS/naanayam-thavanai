@@ -29,7 +29,7 @@ public record CurrentUser(long userId, Long tenantId, Role role) {
     /** Tenant of the caller; fails for SUPER_ADMIN, who has no tenant. */
     public long requireTenant() {
         if (tenantId == null) {
-            throw ApiException.forbidden("This action needs a financier account");
+            throw ApiException.forbidden("This action needs a business account");
         }
         return tenantId;
     }

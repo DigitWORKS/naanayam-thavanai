@@ -6,8 +6,8 @@ Read this before changing code. The full plan, decisions, progress and pending w
 @docs/PROJECT_STATUS.md
 
 ## Product
-- Multi-tenant SaaS for small financiers who lend money and collect **daily or weekly** installments.
-- **Tenant = financier.** Users: `SUPER_ADMIN` (DigitWorks, no tenant), `OWNER` (financier), `AGENT` (field collector).
+- Multi-tenant SaaS for small lending businesses that collect **daily or weekly** installments.
+- **Tenant = business** (see Words). Users: `SUPER_ADMIN` (DigitWorks, no tenant), `OWNER` (runs the business), `AGENT` (field collector).
 - Name: Naanayam Thavanai (நாணயம் தவணை).
   - Mobile app ID (Play Store / App Store): `apps.digitworks.naanayamthavanai` (DigitWorks pattern `apps.digitworks.<app>`).
   - Backend Java package and Gradle group: `tn.digitworks.naanayamthavanai` (same pattern as `fieldnex`: `tn.digitworks.<app>`).
@@ -44,6 +44,11 @@ Env: `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET` (required outside `local`,
 - List filters live in the URL query (bound to inputs), so Back / reload / links keep them.
 - Dialogs use `nt-dialog` (native `<dialog>`). A template listener that returns `false` cancels the event,
   so never write `(cancel)="busy() && $event.preventDefault()"`.
+
+## Words
+- On screens and in messages people read, a customer of Naanayam is a **business** (Super Admin › Businesses,
+  "Add business", "This business account is suspended"). Never "financier" or "tenant" in the UI.
+- In code, the database and the API it stays **tenant** (`tenant_id`, `/admin/tenants`, `Tenant`).
 
 ## Tenancy (never bypass)
 - Shared database; **every business table has `tenant_id`**.

@@ -13,7 +13,7 @@ export interface Tenant {
   status: TenantStatus;
   plan: Plan | null;
   planExpiry: string | null;
-  /** Set when the financier registered themselves and accepted the terms. */
+  /** Set when the business registered themselves and accepted the terms. */
   termsAcceptedAt: string | null;
   createdAt: string;
 }

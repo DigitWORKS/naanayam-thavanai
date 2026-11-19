@@ -23,5 +23,5 @@ export interface TokenResponse {
 /** Where each role lands after login. Agents are not allowed on the web. */
 export const HOME_BY_ROLE: Record<Exclude<Role, 'AGENT'>, string> = {
   OWNER: '/dashboard',
-  SUPER_ADMIN: '/admin/financiers',
+  SUPER_ADMIN: '/admin/businesses',
 };

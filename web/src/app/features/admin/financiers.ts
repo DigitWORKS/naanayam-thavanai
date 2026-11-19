@@ -32,8 +32,8 @@ const todayIso = () => {
 };
 
 /**
- * Super Admin › Financiers (design board "Web admin financiers"). State in the URL: ?q=&show=&page=&t=
- * (t = financier open in the side panel).
+ * Super Admin › Businesses (design board "Web admin financiers"). State in the URL: ?q=&show=&page=&t=
+ * (t = business open in the side panel).
  */
 @Component({
   selector: 'nt-financiers',
@@ -69,7 +69,7 @@ export class FinanciersPage {
     return { url: `${API}/admin/tenants`, params: p };
   });
   private readonly summaryRes = httpResource<TenantSummary>(() => `${API}/admin/tenants/summary`);
-  /** The open financier, fetched on its own so it shows even when the list's filter hides it. */
+  /** The open business, fetched on its own so it shows even when the list's filter hides it. */
   private readonly selectedRes = httpResource<Tenant>(() => (this.t() ? `${API}/admin/tenants/${this.t()}` : undefined));
 
   readonly summary = computed(() => safeValue(this.summaryRes));
@@ -123,7 +123,7 @@ export class FinanciersPage {
     this.go({ q: null, show: null });
   }
 
-  /** After a change in the panel or a new financier: refresh everything and show it. */
+  /** After a change in the panel or a new business: refresh everything and show it. */
   onSaved(id: number): void {
     this.listRes.reload();
     this.summaryRes.reload();

@@ -17,12 +17,12 @@ const todayIso = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-/** Super Admin adds a financier: the business, its owner login and default settings (POST /admin/tenants). */
+/** Super Admin adds a business: the business, its owner login and default settings (POST /admin/tenants). */
 @Component({
   selector: 'nt-financier-form',
   imports: [Dialog],
   template: `
-    <nt-dialog heading="Add financier" width="560px" [busy]="busy()" (closed)="closed.emit()">
+    <nt-dialog heading="Add business" width="560px" [busy]="busy()" (closed)="closed.emit()">
       <form class="form" novalidate (submit)="$event.preventDefault(); submit()">
         <div class="grid">
           <div class="nt-field wide">
@@ -67,7 +67,7 @@ const todayIso = () => {
         @if (error()) { <p class="nt-error-text small" role="alert">{{ error() }}</p> }
         <div class="actions">
           <button type="button" class="nt-btn nt-btn--outline" [disabled]="busy()" (click)="dialog().close()">Cancel</button>
-          <button type="submit" class="nt-btn" [disabled]="busy()">{{ busy() ? 'Adding…' : 'Add financier' }}</button>
+          <button type="submit" class="nt-btn" [disabled]="busy()">{{ busy() ? 'Adding…' : 'Add business' }}</button>
         </div>
       </form>
     </nt-dialog>
@@ -146,7 +146,7 @@ export class FinancierForm {
       this.saved.emit(res.id);
       this.dialog().close();
     } catch (e) {
-      this.error.set(apiErrorMessage(e, 'Could not add the financier.'));
+      this.error.set(apiErrorMessage(e, 'Could not add the business.'));
     } finally {
       this.busy.set(false);
     }

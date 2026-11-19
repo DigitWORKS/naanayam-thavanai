@@ -17,7 +17,7 @@ const todayIso = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-/** Right-hand panel of Financiers: plan, expiry, licence, suspend / lift suspension. */
+/** Right-hand panel of Businesses: plan, expiry, licence, suspend / lift suspension. */
 @Component({
   selector: 'nt-financier-panel',
   imports: [Dialog],
@@ -44,7 +44,7 @@ export class FinancierPanel {
   readonly done = signal('');
 
   constructor() {
-    // Another financier (or the same one reloaded after saving): reset the form to it.
+    // Another business (or the same one reloaded after saving): reset the form to it.
     effect(() => {
       const t = this.tenant();
       untracked(() => {
