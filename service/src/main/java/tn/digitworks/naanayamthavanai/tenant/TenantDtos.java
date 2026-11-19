@@ -34,6 +34,10 @@ public final class TenantDtos {
         }
     }
 
+    /** Super Admin header cards. expiringSoon: plan ends within the next 7 days (today included), not suspended. */
+    public record TenantSummary(long all, long trial, long expiringSoon, long suspended) {
+    }
+
     /** Super Admin onboarding. plan defaults to TRIAL; planExpiry overrides the date the plan gives. */
     public record TenantCreate(
             @NotBlank @Size(max = 150) String name,

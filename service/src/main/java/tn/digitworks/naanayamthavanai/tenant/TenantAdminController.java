@@ -7,6 +7,7 @@ import tn.digitworks.naanayamthavanai.tenant.TenantDtos.TenantUpdate;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,9 +33,16 @@ public class TenantAdminController {
 
     @GetMapping
     public PageResponse<TenantResponse> list(@RequestParam(required = false) Tenant.Status status,
+                                             @RequestParam(required = false) @Size(max = 100) String q,
+                                             @RequestParam(defaultValue = "false") boolean expiringSoon,
                                              @RequestParam(defaultValue = "0") @Min(0) int page,
                                              @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-        return service.list(status, page, size);
+        return service.list(status, q, expiringSoon, page, size);
+    }
+
+    @GetMapping("/summary")
+    public TenantDtos.TenantSummary summary() {
+        return service.summary();
     }
 
     @PostMapping

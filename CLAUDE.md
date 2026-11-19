@@ -83,7 +83,7 @@ Env: `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET` (required outside `local`,
 
 ## API rules
 - OpenAPI first: change `api-spec/openapi.yaml` together with any controller change. Controllers and spec
-  must match one-to-one (53 operations at the moment).
+  must match one-to-one (54 operations at the moment).
 - Errors use the `Error` schema via `ApiException` / `GlobalExceptionHandler`:
   400 `VALIDATION_FAILED`, 401, 403, 404, 409 duplicates/conflicts, 422 business rules (stable `code`
   strings like `INTEREST_ABOVE_CAP`, `PAYMENT_EXCEEDS_OUTSTANDING`).

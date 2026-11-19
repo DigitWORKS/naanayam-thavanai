@@ -23,7 +23,14 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
     List<AppUser> findByIdIn(Collection<Long> ids);
 
-    /** [active, tokenVersion] of a user (per-request token check); empty if the user does not exist. */
-    @Query("select u.active, u.tokenVersion from AppUser u where u.id = :id")
+    /**
+     * [active, tokenVersion, tenant status, tenant planExpiry] of a user for the per-request token check; the
+     * tenant columns are null for SUPER_ADMIN. Empty if the user does not exist.
+     */
+    @Query("""
+            select u.active, u.tokenVersion, t.status, t.planExpiry
+            from AppUser u left join tn.digitworks.naanayamthavanai.tenant.Tenant t on t.id = u.tenantId
+            where u.id = :id
+            """)
     List<Object[]> tokenState(Long id);
 }

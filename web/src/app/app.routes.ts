@@ -2,8 +2,6 @@ import { Routes, UrlMatchResult, UrlSegment } from '@angular/router';
 
 import { authGuard, guestGuard, roleGuard } from './core/auth/auth.guards';
 
-const placeholder = () => import('./features/placeholder/placeholder').then((m) => m.Placeholder);
-
 export const routes: Routes = [
   {
     path: 'login',
@@ -16,7 +14,11 @@ export const routes: Routes = [
     canMatch: [authGuard, roleGuard('SUPER_ADMIN')],
     loadComponent: () => import('./layout/admin-shell/admin-shell').then((m) => m.AdminShell),
     children: [
-      { path: 'financiers', loadComponent: placeholder, data: { title: 'Financiers' }, title: 'Financiers' },
+      {
+        path: 'financiers',
+        loadComponent: () => import('./features/admin/financiers').then((m) => m.FinanciersPage),
+        title: 'Financiers · Naanayam Thavanai',
+      },
       { path: '', pathMatch: 'full', redirectTo: 'financiers' },
     ],
   },

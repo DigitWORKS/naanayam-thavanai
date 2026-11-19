@@ -7,7 +7,7 @@ Last updated: 2026-11-14
 ### Build order
 | # | Step | Status |
 |---|---|---|
-| 1 | API spec + DB schema | ✅ Done (spec 53 operations, migrations V1–V10) |
+| 1 | API spec + DB schema | ✅ Done (spec 54 operations, migrations V1–V10) |
 | 2 | Backend core logic (schedule, allocation, missed days, pre-closure) | ✅ Done, unit tested |
 | 3 | Backend: entities, repositories, services, controllers | ✅ Done |
 | 4 | First run on local MySQL | ✅ Done 2026-11-14: Flyway V1–V6 applied, Hibernate validation passed, Super Admin created |
@@ -303,7 +303,22 @@ API clients generated from `api-spec/openapi.yaml`:
       by-agent target = dues in the agent's assigned areas (was always null).
       Today's collections is not on the web (decided): the owner sees today on the Dashboard; collecting is
       done in the mobile app. Removed from the web menu and routes.
-- [ ] Web next: Super Admin financiers (with admin search and expiring soon).
+- [~] Web slice 9 written (to verify): Super Admin › Financiers (board "Web admin financiers") — cards (all,
+      on trial, expiring in 7 days, suspended; click to filter), search (business, owner, phone digits), chips
+      All / Trial / Active / Suspended / Expiring in 7 days, all in the URL (?q=&show=&page=&t=); rows with
+      since, owner + phone, plan, expiry (amber within 7 days, red when ended), status (Expired shown when
+      the plan has ended). Side panel: self-registered + terms time or "Added by Super Admin", plan Trial /
+      Monthly / Yearly with the resulting expiry (same rule as Plan.renewedExpiry, unused days kept; spec),
+      expiry override, licence, Save; Suspend (confirm) / Lift suspension. Add financier dialog (business,
+      owner, mobile, first PIN, max interest, licence, plan with its end date).
+      Backend: GET /admin/tenants adds q and expiringSoon (soonest first); GET /admin/tenants/summary; PATCH
+      status: SUSPENDED suspends, any other value lifts a suspension and the status follows the plan (sending
+      ACTIVE for a trial no longer made it ACTIVE).
+      Security fix: suspending a financier, or its plan ending, only blocked new logins and refreshes — access
+      tokens kept working up to 12 h. The per-request token check now also requires the financier to be usable
+      (same rule as Tenant.isUsable; TokenStateTest). Spec 54 operations.
+      The web app has no placeholder pages left (features/placeholder can be deleted).
+- [ ] Web: all pages in the design are built; next is verifying slices 1–9 on the real backend.
 - [ ] Tamil version: no separate design; done in code (Flutter ARB / Angular i18n) after the web app and the
       remaining functionality are complete. Noto Sans Tamil is already in both designs.
 - [x] API gaps found while designing: `409 CLIENT_EXISTS` now returns `details` {clientId, name, areaId,

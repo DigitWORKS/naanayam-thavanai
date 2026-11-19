@@ -28,11 +28,39 @@ public class TenantAdminService {
         this.clock = clock;
     }
 
+    /** Days ahead counted as "expiring soon" (today included). */
+    static final int EXPIRING_DAYS = 7;
+
+    /**
+     * Newest first; with {@code expiringSoon}, soonest expiry first. {@code q}: business or owner name (contains,
+     * any case) or phone digits.
+     */
     @Transactional(readOnly = true)
-    public PageResponse<TenantResponse> list(Tenant.Status status, int page, int size) {
-        PageRequest pr = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
-        Page<Tenant> result = status == null ? tenants.findAll(pr) : tenants.findByStatus(status, pr);
+    public PageResponse<TenantResponse> list(Tenant.Status status, String q, boolean expiringSoon, int page, int size) {
+        String text = q == null ? "" : q.trim().toLowerCase();
+        String nameLike = text.isEmpty() ? null : "%" + escapeLike(text) + "%";
+        String digits = text.replaceAll("\\D", "");
+        String phoneLike = digits.isEmpty() ? "~" : "%" + digits + "%";
+        LocalDate today = LocalDate.now(clock);
+        Sort sort = expiringSoon
+                ? Sort.by(Sort.Direction.ASC, "planExpiry").and(Sort.by(Sort.Direction.DESC, "id"))
+                : Sort.by(Sort.Direction.DESC, "id");
+        Page<Tenant> result = tenants.search(status, nameLike, phoneLike,
+                expiringSoon ? today : null, expiringSoon ? today.plusDays(EXPIRING_DAYS - 1) : null,
+                PageRequest.of(page, size, sort));
         return PageResponse.of(result, TenantResponse::of);
+    }
+
+    @Transactional(readOnly = true)
+    public TenantDtos.TenantSummary summary() {
+        LocalDate today = LocalDate.now(clock);
+        return new TenantDtos.TenantSummary(tenants.count(), tenants.countByStatus(Tenant.Status.TRIAL),
+                tenants.countExpiring(today, today.plusDays(EXPIRING_DAYS - 1)),
+                tenants.countByStatus(Tenant.Status.SUSPENDED));
+    }
+
+    private static String escapeLike(String s) {
+        return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     /** Creates the tenant, its OWNER login (same phone) and default settings. Any plan is allowed here. */
@@ -52,8 +80,11 @@ public class TenantAdminService {
     @Transactional
     public TenantResponse update(long id, TenantUpdate in) {
         Tenant t = find(id);
-        if (in.status() != null) {
-            t.setStatus(in.status());
+        if (in.status() == Tenant.Status.SUSPENDED) {
+            t.setStatus(Tenant.Status.SUSPENDED);
+        } else if (in.status() != null && t.getStatus() == Tenant.Status.SUSPENDED) {
+            // Lifting a suspension: the status follows the plan (a trial stays TRIAL), whatever value was sent.
+            t.setStatus(t.getPlan() == null ? Tenant.Status.ACTIVE : t.getPlan().status());
         }
         if (in.plan() != null) {
             t.applyPlan(in.plan(), LocalDate.now(clock));

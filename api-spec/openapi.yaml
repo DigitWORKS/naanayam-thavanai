@@ -158,13 +158,21 @@ paths:
   /admin/tenants:
     get:
       tags: [Admin]
-      summary: List tenants
+      summary: List tenants (newest first; with expiringSoon, soonest expiry first)
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
         - name: status
           in: query
           schema: { $ref: '#/components/schemas/TenantStatus' }
+        - name: q
+          in: query
+          description: Business or owner name (contains, any case) or phone digits
+          schema: { type: string, maxLength: 100 }
+        - name: expiringSoon
+          in: query
+          description: Only plans ending within the next 7 days (today included), not suspended
+          schema: { type: boolean, default: false }
       responses:
         '200':
           description: Tenant page
@@ -187,6 +195,23 @@ paths:
               schema: { $ref: '#/components/schemas/Tenant' }
         '409': { $ref: '#/components/responses/Conflict' }
 
+
+  /admin/tenants/summary:
+    get:
+      tags: [Admin]
+      summary: Counts for the Super Admin header cards
+      responses:
+        '200':
+          description: Counts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  all: { type: integer }
+                  trial: { type: integer }
+                  expiringSoon: { type: integer, description: Plan ends within 7 days (today included), not suspended }
+                  suspended: { type: integer }
   /admin/tenants/{tenantId}:
     parameters:
       - name: tenantId
@@ -1368,7 +1393,12 @@ components:
     TenantUpdate:
       type: object
       properties:
-        status: { $ref: '#/components/schemas/TenantStatus' }
+        status:
+          allOf:
+            - $ref: '#/components/schemas/TenantStatus'
+          description: >
+            SUSPENDED suspends: the financier's users are signed out on their next request and cannot log in.
+            Any other value lifts a suspension; the status then follows the plan (TRIAL for a trial).
         plan:
           allOf:
             - $ref: '#/components/schemas/Plan'
