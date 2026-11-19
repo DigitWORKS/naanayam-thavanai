@@ -71,7 +71,10 @@
     </div>
     @if (areaError()) { <p class="nt-error-text small" role="alert">{{ areaError() }}</p> }
     @if (areasError()) {
-      <p class="muted small">{{ areasError() }} <button type="button" class="nt-link-btn" (click)="retry()">Retry</button></p>
+      <p class="nt-error-text small" role="alert">Could not load areas: {{ areasError() }}
+        <button type="button" class="nt-link-btn" (click)="retry()">Retry</button></p>
+    } @else if (overviewFailed()) {
+      <p class="muted small">Client counts and agents per area could not be loaded.</p>
     }
     <div class="areas">
       @for (a of areas(); track a.source.id) {
@@ -80,10 +83,11 @@
             <span class="strong">{{ a.source.name }}@if (!a.source.isActive) { <span class="nt-tag">Inactive</span>}</span>
             <button type="button" class="nt-link-btn" (click)="open({ kind: 'rename', area: a.source })">Rename</button>
           </div>
-          <span class="muted small">{{ a.line }}</span>
+          @if (a.line) { <span class="muted small">{{ a.line }}</span> }
         </div>
       } @empty {
-        @if (!areasError()) { <p class="muted small">No areas yet. Add your first area above.</p> }
+        @if (areasLoading()) { <p class="muted small">Loading…</p> }
+        @else if (!areasError()) { <p class="muted small">No areas yet. Add your first area above.</p> }
       }
     </div>
   </section>
@@ -118,7 +122,7 @@
         <label><input type="checkbox" [checked]="pickedAreas().includes(a.id)"
                       (change)="toggleArea(a.id, $any($event.target).checked)" /> {{ a.name }}</label>
       } @empty {
-        <span class="hint">Add an area first.</span>
+        <span class="hint">{{ areasLoading() ? 'Loading areas…' : areasError() ? 'Areas could not be loaded.' : 'Add an area first.' }}</span>
       }
       @if (shown()['areas']; as e) { <span class="err">{{ e }}</span> }
     </fieldset>

@@ -19,7 +19,14 @@ interface AgentUser {
   lastLoginAt: string | null;
 }
 
-/** GET /areas/overview */
+/** GET /areas */
+interface Area {
+  id: number;
+  name: string;
+  isActive: boolean;
+}
+
+/** GET /areas/overview — adds counts and agents to the plain list. */
 interface AreaOverview {
   id: number;
   name: string;
@@ -32,7 +39,7 @@ type Action =
   | { kind: 'areas'; agent: AgentUser }
   | { kind: 'pin'; agent: AgentUser }
   | { kind: 'deactivate'; agent: AgentUser }
-  | { kind: 'rename'; area: AreaOverview }
+  | { kind: 'rename'; area: Area }
   | null;
 
 /** Same rules as the server (UserDtos.PHONE / PIN). */
@@ -54,7 +61,10 @@ export class AgentsPage {
   private readonly http = inject(HttpClient);
 
   private readonly agentsRes = httpResource<AgentUser[]>(() => ({ url: `${API}/users`, params: { role: 'AGENT' } }));
-  private readonly areasRes = httpResource<AreaOverview[]>(() => `${API}/areas/overview`);
+  /** The areas themselves: always available. */
+  private readonly areasRes = httpResource<Area[]>(() => `${API}/areas`);
+  /** Client counts and agents per area; if it fails the areas still show, without them. */
+  private readonly overviewRes = httpResource<AreaOverview[]>(() => `${API}/areas/overview`);
   private readonly monthRes = httpResource<{ key: string; collected: string }[]>(() => {
     const now = new Date();
     return {
@@ -91,16 +101,30 @@ export class AgentsPage {
     return `${active} active${inactive ? ` · ${inactive} inactive` : ''}`;
   });
 
-  readonly areas = computed(() => (safeValue(this.areasRes) ?? []).map((a) => ({
-    source: a,
-    line: `${a.clientCount} ${a.clientCount === 1 ? 'client' : 'clients'} · ${
-      a.agents.length ? `Agent: ${a.agents.map((x) => x.name).join(', ')}` : 'No agent yet'}`,
-  })));
+  readonly areasLoading = computed(() => this.areasRes.isLoading() && !this.areasRes.hasValue());
+  readonly overviewFailed = computed(() => !!this.overviewRes.error() && this.areasRes.hasValue());
+
+  readonly areas = computed(() => {
+    const extra = new Map((safeValue(this.overviewRes) ?? []).map((o) => [o.id, o]));
+    return [...(safeValue(this.areasRes) ?? [])]
+      .sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.name.localeCompare(b.name))
+      .map((a) => {
+        const o = extra.get(a.id);
+        return {
+          source: a,
+          line: o
+            ? `${o.clientCount} ${o.clientCount === 1 ? 'client' : 'clients'} · ${
+              o.agents.length ? `Agent: ${o.agents.map((x) => x.name).join(', ')}` : 'No agent yet'}`
+            : '',
+        };
+      });
+  });
   readonly activeAreas = computed(() => (safeValue(this.areasRes) ?? []).filter((a) => a.isActive));
 
   private reloadAll(): void {
     this.agentsRes.reload();
     this.areasRes.reload();
+    this.overviewRes.reload();
   }
 
   retry(): void {
@@ -123,6 +147,7 @@ export class AgentsPage {
       await firstValueFrom(this.http.post(`${API}/areas`, { name }));
       this.newArea.set('');
       this.areasRes.reload();
+      this.overviewRes.reload();
     } catch (e) {
       this.areaError.set(apiErrorMessage(e, 'Could not add the area.'));
     } finally {
