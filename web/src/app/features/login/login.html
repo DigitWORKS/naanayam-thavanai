@@ -1,0 +1,82 @@
+<div class="login">
+  <section class="hero">
+    <div class="brand">
+      <span class="coin" aria-hidden="true">நா</span>
+      <span class="brand-text">
+        <span class="brand-ta">நாணயம் தவணை</span>
+        <span class="brand-en">NAANAYAM THAVANAI</span>
+      </span>
+    </div>
+
+    <div class="pitch">
+      <h1>Every rupee lent, every rupee collected — in one place.</h1>
+      <p>Daily and weekly loans, agent collections, cash handovers and income-tax reports for your finance business.</p>
+      <ul class="facts">
+        <li><strong>Daily</strong><span>&amp; weekly loans</span></li>
+        <li><strong>Offline</strong><span>collection by agents</span></li>
+        <li><strong>Cash + UPI</strong><span>with handover checks</span></li>
+      </ul>
+    </div>
+
+    <span class="maker">DigitWorks · Made in Tamil Nadu</span>
+  </section>
+
+  <section class="panel">
+    <form class="card" (submit)="submit($event)" novalidate>
+      <div class="head">
+        <h2>Log in</h2>
+        <p>Owners and Super Admin use the web. Agents use the mobile app.</p>
+      </div>
+
+      @if (notice(); as n) {
+        <p class="notice" role="status">{{ n }}</p>
+      }
+
+      <div class="nt-field">
+        <label for="phone">Mobile number</label>
+        <div class="phone">
+          <span class="cc">+91</span>
+          <span class="sep" aria-hidden="true"></span>
+          <input
+            id="phone"
+            name="phone"
+            inputmode="tel"
+            autocomplete="tel-national"
+            placeholder="98765 43210"
+            [value]="phone()"
+            (input)="onPhone($any($event.target).value)"
+            [disabled]="busy()"
+          />
+        </div>
+      </div>
+
+      <div class="nt-field">
+        <label for="pin">PIN</label>
+        <input
+          id="pin"
+          name="pin"
+          type="password"
+          inputmode="numeric"
+          autocomplete="current-password"
+          placeholder="4–6 digits"
+          class="pin"
+          [value]="pin()"
+          (input)="onPin($any($event.target).value)"
+          [disabled]="busy()"
+        />
+      </div>
+
+      @if (error(); as e) {
+        <p class="nt-error-text" role="alert">{{ e }}</p>
+      }
+
+      <button type="submit" class="nt-btn submit" [disabled]="!canSubmit()">
+        {{ busy() ? 'Logging in…' : 'Log in' }}
+      </button>
+
+      <p class="hint">Forgot your PIN? Ask DigitWorks support to reset it.</p>
+      <hr />
+      <p class="hint">New financier? Register free for 30 days in the Naanayam Thavanai mobile app.</p>
+    </form>
+  </section>
+</div>

@@ -1,0 +1,107 @@
+// Design tokens from the design canvas ("Naanayam Thavanai App Design", web row).
+:root {
+  --nt-brand: #0e6b4f;
+  --nt-brand-dark: #0a4d39;
+  --nt-brand-tint: #e6f2ed;
+  --nt-bg: #f4f6f5;
+  --nt-surface: #ffffff;
+  --nt-ink: #10231c;
+  --nt-muted: #5b6b64;
+  --nt-border: #c5d0cb;
+  --nt-divider: #e3eae7;
+  --nt-warning: #8a4300;
+  --nt-warning-tint: #fff4e5;
+  --nt-error: #b3261e;
+  --nt-error-tint: #fdecea;
+  --nt-gold: #e9b949;
+  --nt-nav: #10231c;
+
+  --nt-font: Inter, 'Noto Sans Tamil', system-ui, sans-serif;
+  --nt-font-display: 'Space Grotesk', Inter, sans-serif;
+  --nt-font-tamil: 'Noto Sans Tamil', Inter, sans-serif;
+  --nt-radius: 12px;
+  --nt-radius-card: 16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--nt-font);
+  color: var(--nt-ink);
+  background: var(--nt-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--nt-brand); }
+a:hover { color: var(--nt-brand-dark); }
+
+h1, h2, h3 { font-family: var(--nt-font-display); margin: 0; }
+
+// Shared building blocks
+.nt-card {
+  background: var(--nt-surface);
+  border-radius: var(--nt-radius-card);
+  padding: 18px;
+}
+
+.nt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: var(--nt-radius);
+  border: 0;
+  font: 600 14px var(--nt-font);
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--nt-brand);
+  color: #fff;
+
+  &:hover { background: var(--nt-brand-dark); color: #fff; }
+  &:disabled { opacity: 0.55; cursor: default; }
+
+  &--outline {
+    background: var(--nt-surface);
+    color: var(--nt-ink);
+    border: 1.5px solid var(--nt-border);
+    &:hover { background: var(--nt-bg); color: var(--nt-ink); }
+  }
+}
+
+.nt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label { font: 600 14px var(--nt-font); }
+
+  input {
+    height: 52px;
+    border: 1.5px solid var(--nt-border);
+    border-radius: var(--nt-radius);
+    padding: 0 14px;
+    font: 500 16px var(--nt-font);
+    color: var(--nt-ink);
+    background: var(--nt-surface);
+    outline: none;
+
+    &:focus { border-color: var(--nt-brand); border-width: 2px; padding: 0 13.5px; }
+  }
+}
+
+.nt-error-text {
+  color: var(--nt-error);
+  font: 600 14px var(--nt-font);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); border: 0;
+}

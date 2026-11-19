@@ -95,6 +95,9 @@ API clients generated from `api-spec/openapi.yaml`:
 - Loan number: `LN000001` per tenant (count + 1 under a tenant row lock).
 - Document storage: `DocumentStorage` interface, `LocalDocumentStorage` for now (JPG/PNG/WEBP/PDF, 5 MB),
   downloaded through an authenticated endpoint.
+- Android build targets **Java 25** (2026-11-18): `compileOptions` + Kotlin `jvmTarget` 25 and `jvmToolchain(25)`
+  in `mobile/android/app/build.gradle.kts`, so javac/kotlinc use a local JDK 25 even though
+  `~/.gradle/gradle.properties` pins the Gradle daemon to JDK 17. Android runtime APIs are still limited by `minSdk`.
 - Repo conventions: `service/` (not `backend/`), monorepo with `api-spec`, `service`, `mobile`, `web`,
   `db/migrations`.
 - Identifiers: mobile app ID `apps.digitworks.naanayamthavanai`; backend Java package and Gradle group
@@ -190,7 +193,16 @@ API clients generated from `api-spec/openapi.yaml`:
       installment should say which extension a missed day moved to (#59 → #101); admin tenant list needs search
       and "expiring in 7 days"; Super Admin owner-PIN reset (support); an agent's cash payments for one day
       (handover "See list"); interest-income export for the CA (Excel / CSV; the API only returns JSON).
-- [ ] Remaining designs: Tamil-language version.
+- [x] Angular `web/` set up (Angular 21.2, standalone, signals, zoneless via provideZonelessChangeDetection, OnPush,
+      Vitest, 2025 file names, prefix `nt`): core (API root `/v1` with dev proxy to :8080, Money in paise, AuthService
+      on signals, functional interceptor with shared refresh-on-401, guards: owner → owner shell, Super Admin →
+      admin shell, agents refused), owner shell with the design's side menu (business name / plan days / pending
+      handovers via httpResource), admin shell, login (design W1), placeholder pages for every menu item. Dev and
+      production builds pass (initial 268 kB, 75 kB transfer); 10 Vitest tests pass.
+- [ ] Web next: backend API gaps for the web design, then pages: dashboard, loans + loan detail, clients, cash
+      handovers, agents & areas, settings, reports, Super Admin financiers.
+- [ ] Tamil version: no separate design; done in code (Flutter ARB / Angular i18n) after the web app and the
+      remaining functionality are complete. Noto Sans Tamil is already in both designs.
 - [x] API gaps found while designing: `409 CLIENT_EXISTS` now returns `details` {clientId, name, areaId,
       areaName, isActive, accessible} (`accessible` false for an agent outside that area). Loan creation is
       owner-only (`POST /loans` → 403 for agents); apps hide "Save & give loan" when `user.role` is AGENT.

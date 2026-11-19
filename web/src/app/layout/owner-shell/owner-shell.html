@@ -1,0 +1,48 @@
+<div class="shell">
+  <nav class="menu" aria-label="Main">
+    <div class="brand">
+      <span class="coin" aria-hidden="true">நா</span>
+      <span class="brand-text">
+        <span class="brand-ta">நாணயம் தவணை</span>
+        <span class="brand-en">NAANAYAM THAVANAI</span>
+      </span>
+    </div>
+
+    <div class="business">
+      <span class="business-name">{{ business.businessName() || '…' }}</span>
+      @if (business.planText(); as plan) {
+        <span class="plan" [class.plan--warn]="business.expiringSoon()">{{ plan }}</span>
+      }
+    </div>
+
+    <ul class="items">
+      @for (item of nav; track item.path) {
+        @if (item.section) {
+          <li class="section">{{ item.section }}</li>
+        }
+        <li>
+          <a [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page" class="item">
+            <span class="icon" aria-hidden="true">{{ item.icon }}</span>
+            <span class="label">{{ item.label }}</span>
+            @if (item.badge?.(); as count) {
+              <span class="badge" [attr.aria-label]="count + ' to confirm'">{{ count }}</span>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+
+    <div class="me">
+      <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+      <span class="me-text">
+        <span class="me-name">{{ user()?.name }}</span>
+        <span class="me-role">Owner</span>
+      </span>
+      <button type="button" class="logout" (click)="logout()">Log out</button>
+    </div>
+  </nav>
+
+  <main class="page">
+    <router-outlet />
+  </main>
+</div>

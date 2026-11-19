@@ -1,0 +1,22 @@
+<div class="shell">
+  <nav class="menu" aria-label="Admin">
+    <div class="brand">
+      <span class="coin" aria-hidden="true">நா</span>
+      <span class="brand-text">
+        <span class="brand-name">DigitWorks</span>
+        <span class="brand-role">SUPER ADMIN</span>
+      </span>
+    </div>
+    <a routerLink="/admin/financiers" routerLinkActive="active" ariaCurrentWhenActive="page" class="item">▦ Financiers</a>
+    <div class="me">
+      <span class="me-text">
+        <span class="me-name">{{ user()?.name }}</span>
+        <span class="me-role">Super Admin</span>
+      </span>
+      <button type="button" class="logout" (click)="logout()">Log out</button>
+    </div>
+  </nav>
+  <main class="page">
+    <router-outlet />
+  </main>
+</div>
