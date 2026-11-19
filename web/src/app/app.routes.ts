@@ -4,9 +4,6 @@ import { authGuard, guestGuard, roleGuard } from './core/auth/auth.guards';
 
 const placeholder = () => import('./features/placeholder/placeholder').then((m) => m.Placeholder);
 
-/** Owner pages from the web design; each becomes a real feature in the next steps. */
-const ownerPage = (path: string, title: string) => ({ path, loadComponent: placeholder, data: { title }, title });
-
 export const routes: Routes = [
   {
     path: 'login',
@@ -33,7 +30,6 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.DashboardPage),
         title: 'Dashboard · Naanayam Thavanai',
       },
-      ownerPage('today', "Today's collections"),
       {
         // /clients and /clients/:clientId share one route, so picking another client keeps the list (same
         // component instance) instead of rebuilding the page.
@@ -61,7 +57,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/handovers/handovers').then((m) => m.HandoversPage),
         title: 'Cash handovers · Naanayam Thavanai',
       },
-      ownerPage('reports', 'Reports'),
+      {
+        path: 'reports/income',
+        loadComponent: () => import('./features/reports/income-report').then((m) => m.IncomeReportPage),
+        title: 'Income for tax · Naanayam Thavanai',
+      },
+      {
+        path: 'reports',
+        loadComponent: () => import('./features/reports/collections-report').then((m) => m.CollectionsReportPage),
+        title: 'Reports · Naanayam Thavanai',
+      },
       {
         path: 'agents',
         loadComponent: () => import('./features/agents/agents').then((m) => m.AgentsPage),

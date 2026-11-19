@@ -37,7 +37,6 @@ export class OwnerShell {
 
   protected readonly nav: NavItem[] = [
     { path: '/dashboard', label: 'Dashboard', icon: '⌂' },
-    { path: '/today', label: "Today's collections", icon: '◷' },
     { path: '/clients', label: 'Clients', icon: '☺' },
     { path: '/loans', label: 'Loans', icon: '▤' },
     { path: '/handovers', label: 'Cash handovers', icon: '₹', badge: () => this.business.pendingHandovers() },

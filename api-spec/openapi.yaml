@@ -1866,12 +1866,15 @@ components:
         target:
           type: string
           nullable: true
-          description: Amount due in the period; null when grouped by AGENT
+          description: >
+            Amount due in the period (not settled, loan not defaulted — same rule as the dashboard). By AGENT:
+            dues in the agent's assigned areas (shared areas count for each agent); null for owners and agents
+            without areas.
           example: '1250.00'
         collected: { $ref: '#/components/schemas/Money' }
         cash: { $ref: '#/components/schemas/Money' }
         upi: { $ref: '#/components/schemas/Money' }
-        paymentCount: { type: integer }
+        paymentCount: { type: integer, description: Payments (not reversals) }
     InterestIncomeReport:
       type: object
       properties:

@@ -290,9 +290,20 @@ API clients generated from `api-spec/openapi.yaml`:
       Security fix: login had no attempt limit (a 4-digit PIN is 10,000 guesses) — now 10 per mobile number
       per 15 min, change-PIN 5 per user per 15 min, 429 TOO_MANY_ATTEMPTS (in memory, per server instance).
       Spec 53 operations. Mobile can use change-pin later (its Settings has no PIN change yet).
-- [ ] Web next: pages — reports, Super Admin financiers;
-      with their API gaps (admin search and expiring soon;
-      income export).
+- [~] Web slice 8 written (to verify): Reports (boards "Web reports" / "Web income for tax"), tabs Collections
+      | Income for tax. Collections: Today / This week (Monday start) / This month / Custom (≤ 1 year), group by
+      Day / Agent / Area, all in the URL; totals (target, collected % of target, cash, UPI, payments); day chart
+      (target bar behind, collected in front, today in gold, hover / focus tooltip; up to 62 days, every day
+      shown, zero days included), or bars per agent / area with "of target · %"; table with % of target (below
+      80% in amber); Export CSV. Income for tax: FY picker (this and 4 previous), "counted when received" note,
+      totals (income, interest, penalty, pre-closure charges), month rows with bars, future months "—", FY total;
+      Download for CA (CSV). CSVs built in the browser (shared/csv.ts: BOM, CRLF, formula-safe; spec).
+      Backend fix (collections report): target now skips defaulted loans like the dashboard (Today's target on
+      Reports matched the dashboard only when no defaulted loan had dues); payment count excludes reversals;
+      by-agent target = dues in the agent's assigned areas (was always null).
+      Today's collections is not on the web (decided): the owner sees today on the Dashboard; collecting is
+      done in the mobile app. Removed from the web menu and routes.
+- [ ] Web next: Super Admin financiers (with admin search and expiring soon).
 - [ ] Tamil version: no separate design; done in code (Flutter ARB / Angular i18n) after the web app and the
       remaining functionality are complete. Noto Sans Tamil is already in both designs.
 - [x] API gaps found while designing: `409 CLIENT_EXISTS` now returns `details` {clientId, name, areaId,

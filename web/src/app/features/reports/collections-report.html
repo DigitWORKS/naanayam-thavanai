@@ -1,0 +1,141 @@
+<header class="top">
+  <div class="title">
+    <h1>Reports</h1>
+    <nav class="tabs" aria-label="Report">
+      <span class="tab on" aria-current="page">Collections</span>
+      <a class="tab" routerLink="/reports/income">Income for tax</a>
+    </nav>
+  </div>
+  <button type="button" class="nt-btn nt-btn--outline" [disabled]="!totals()" (click)="exportCsv()">Export CSV</button>
+</header>
+
+<div class="filters">
+  <div class="seg" role="radiogroup" aria-label="Period">
+    @for (p of periods; track p.id) {
+      <button type="button" role="radio" [attr.aria-checked]="period() === p.id" [class.on]="period() === p.id"
+              (click)="pickPeriod(p.id)">{{ p.label }}</button>
+    }
+  </div>
+  @if (period() === 'custom') {
+    <label><span class="visually-hidden">From</span>
+      <input type="date" class="nt-select" [max]="today" [value]="range().from" (change)="setFrom($any($event.target).value)" /></label>
+    <span class="muted">–</span>
+    <label><span class="visually-hidden">To</span>
+      <input type="date" class="nt-select" [max]="today" [value]="range().to" (change)="setTo($any($event.target).value)" /></label>
+  } @else {
+    <span class="range">{{ rangeText() }}</span>
+  }
+  <span class="spacer"></span>
+  <span class="muted small" id="rp-group">Group by</span>
+  <div class="seg" role="radiogroup" aria-labelledby="rp-group">
+    @for (g of groups; track g.id) {
+      <button type="button" role="radio" [attr.aria-checked]="group() === g.id" [class.on]="group() === g.id"
+              (click)="pickGroup(g.id)">{{ g.label }}</button>
+    }
+  </div>
+</div>
+
+@if (rangeError()) {
+  <p class="nt-error-text" role="alert">{{ rangeError() }}</p>
+} @else if (error()) {
+  <div class="card" role="alert"><p class="nt-error-text">{{ error() }} <button type="button" class="nt-link-btn" (click)="retry()">Retry</button></p></div>
+}
+
+<section class="stats" [class.stale]="loading()">
+  @let t = totals();
+  <div class="stat"><span class="label">Target</span><span class="value">{{ t?.target ?? '…' }}</span></div>
+  <div class="stat stat--brand">
+    <span class="label">Collected</span><span class="value">{{ t?.collected ?? '…' }}</span>
+    @if (t?.pct) { <span class="note">{{ t!.pct }}</span> }
+  </div>
+  <div class="stat"><span class="label">Cash</span><span class="value">{{ t?.cash ?? '…' }}</span></div>
+  <div class="stat"><span class="label">UPI</span><span class="value">{{ t?.upi ?? '…' }}</span></div>
+  <div class="stat"><span class="label">Payments</span><span class="value">{{ t?.count ?? '…' }}</span></div>
+</section>
+
+@if (dayChart() || groupChart()) {
+  <section class="card chart-card" [class.stale]="loading()">
+    <div class="chart-head">
+      <h2>{{ chartTitle() }}</h2>
+      <span class="legend"><span class="sw sw--collected"></span>Collected</span>
+      <span class="legend"><span class="sw sw--target"></span>Target</span>
+    </div>
+
+    @if (dayChart(); as c) {
+      <div class="day-chart">
+        <div class="y-axis" aria-hidden="true">@for (tk of c.ticks; track $index) { <span>{{ tk }}</span> }</div>
+        <div class="plot-wrap">
+          <div class="plot" role="img" [attr.aria-label]="chartTitle() + ', ' + rangeText() + '. Values are in the table below.'"
+               (mouseleave)="tipKey.set(null)">
+            <div class="grid-line top"></div><div class="grid-line mid"></div>
+            @for (b of c.bars; track b.key) {
+              <div class="slot" (mouseenter)="tipKey.set(b.key)" (focus)="tipKey.set(b.key)" (blur)="tipKey.set(null)"
+                   tabindex="0" [attr.aria-label]="b.key">
+                <div class="bar bar--target" [style.height.%]="b.targetPct"></div>
+                <div class="bar bar--collected" [class.today]="b.isToday" [style.height.%]="b.collectedPct"></div>
+              </div>
+            }
+            @if (tip(); as tp) {
+              <div class="tip" [class.flip]="tp.flip" [style.left.%]="tp.leftPct" role="status">
+                <div class="strong">{{ tp.label }}</div>
+                <div>Collected {{ tp.collected }}{{ tp.pct }}</div>
+                <div class="muted">Target {{ tp.target }} · Cash {{ tp.cash }} · UPI {{ tp.upi }}</div>
+              </div>
+            }
+          </div>
+          <div class="x-axis" aria-hidden="true">@for (b of c.bars; track b.key) { <span>{{ b.axis }}</span> }</div>
+        </div>
+      </div>
+    }
+
+    @if (groupChart(); as hb) {
+      <div class="hbars">
+        @for (h of hb; track h.key) {
+          <div class="hrow">
+            <span class="hkey">{{ h.key }}</span>
+            <div class="htrack">
+              <div class="hbar hbar--target" [style.width.%]="h.targetPct"></div>
+              <div class="hbar hbar--collected" [style.width.%]="h.collectedPct"></div>
+            </div>
+            <span class="hval"><b>{{ h.collected }}</b> <span class="muted">{{ h.of }}</span></span>
+          </div>
+        } @empty {
+          <p class="muted small">No collections in this period.</p>
+        }
+      </div>
+    }
+  </section>
+} @else if (chartTooLong()) {
+  <p class="muted small">The day chart shows up to two months; the table below has every day.</p>
+}
+
+<section class="table-card" [class.stale]="loading()">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">{{ keyHeader() }}</th>
+        <th scope="col" class="num">Target</th>
+        <th scope="col" class="num">Collected</th>
+        <th scope="col" class="num">% of target</th>
+        <th scope="col" class="num">Cash</th>
+        <th scope="col" class="num">UPI</th>
+        <th scope="col" class="num">Payments</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (r of tableRows(); track r.key) {
+        <tr>
+          <td class="strong">{{ r.label }}</td>
+          <td class="num muted">{{ r.target }}</td>
+          <td class="num strong">{{ r.collected }}</td>
+          <td class="num" [class.warn]="r.low">{{ r.pct }}</td>
+          <td class="num">{{ r.cash }}</td>
+          <td class="num">{{ r.upi }}</td>
+          <td class="num">{{ r.count }}</td>
+        </tr>
+      } @empty {
+        <tr><td colspan="7" class="empty">{{ loading() ? 'Loading…' : 'Nothing collected or due in this period.' }}</td></tr>
+      }
+    </tbody>
+  </table>
+</section>

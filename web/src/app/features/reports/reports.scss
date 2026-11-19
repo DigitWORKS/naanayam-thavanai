@@ -1,0 +1,222 @@
+// Shared by Reports › Collections and Reports › Income for tax.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+p { margin: 0; }
+h2 { font: 700 16px var(--nt-font-display); }
+.muted { color: var(--nt-muted); }
+.strong { font-weight: 600; }
+.small { font: 500 12px var(--nt-font); }
+.warn { color: var(--nt-warning); font-weight: 600; }
+.stale { opacity: 0.55; transition: opacity 0.15s; }
+
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+
+.title {
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  h1 { font: 700 28px var(--nt-font-display); }
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--nt-radius);
+  background: var(--nt-divider);
+
+  .tab {
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    font: 600 13px var(--nt-font);
+    color: var(--nt-muted);
+    text-decoration: none;
+    &.on { background: var(--nt-surface); color: var(--nt-ink); box-shadow: 0 1px 2px rgba(16, 35, 28, 0.08); }
+    &:not(.on):hover { color: var(--nt-ink); }
+  }
+}
+
+.filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.spacer { flex: 1; }
+.range { font: 600 14px var(--nt-font); }
+
+.seg {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-divider);
+
+  button {
+    height: 32px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    font: 600 13px var(--nt-font);
+    color: var(--nt-muted);
+    cursor: pointer;
+    &.on { background: var(--nt-ink); color: #fff; }
+  }
+}
+
+.card { background: var(--nt-surface); border-radius: var(--nt-radius-card); padding: 18px 20px; }
+
+// ---------------------------------------------------------------- stats
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.stat {
+  background: var(--nt-surface);
+  border-radius: var(--nt-radius-card);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .label { font: 500 12px var(--nt-font); color: var(--nt-muted); }
+  .value { font: 700 22px var(--nt-font-display); font-variant-numeric: tabular-nums; }
+  .note { font: 500 12px var(--nt-font); }
+
+  &--brand {
+    background: var(--nt-brand);
+    color: #fff;
+    .label { color: #cfe6dd; }
+    .note { color: var(--nt-brand-tint); }
+  }
+}
+
+// ---------------------------------------------------------------- chart
+
+.chart-card { display: flex; flex-direction: column; gap: 14px; }
+.chart-head { display: flex; align-items: center; gap: 16px; h2 { flex: 1; } }
+.legend { display: flex; align-items: center; gap: 6px; font: 500 12px var(--nt-font); color: var(--nt-muted); }
+.sw { width: 10px; height: 10px; border-radius: 3px; }
+.sw--collected { background: var(--nt-brand); }
+.sw--target { background: #d6e2dd; }
+
+.day-chart { display: flex; gap: 8px; }
+
+.y-axis {
+  height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font: 500 11px var(--nt-font);
+  color: var(--nt-muted);
+  text-align: right;
+  min-width: 40px;
+  span { transform: translateY(-50%); }
+  span:last-child { transform: translateY(50%); }
+}
+
+.plot-wrap { flex: 1; min-width: 0; }
+
+.plot {
+  position: relative;
+  height: 220px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  border-bottom: 1px solid var(--nt-border);
+}
+
+.grid-line { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--nt-divider); pointer-events: none; }
+.grid-line.top { top: 0; }
+.grid-line.mid { top: 50%; }
+
+.slot {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+  cursor: default;
+  outline: none;
+  &:hover, &:focus-visible { background: rgba(16, 35, 28, 0.04); }
+}
+
+.bar {
+  position: absolute;
+  bottom: 0;
+  border-radius: 4px 4px 0 0;
+}
+
+// Target: a wide, quiet bar behind; collected: the narrower, solid one in front.
+.bar--target { left: 8%; right: 8%; background: #e2ebe7; }
+.bar--collected { left: 26%; right: 26%; background: var(--nt-brand); &.today { background: var(--nt-gold); } }
+
+.tip {
+  position: absolute;
+  top: 6px;
+  transform: translateX(8px);
+  z-index: 2;
+  min-width: 190px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--nt-ink);
+  color: #fff;
+  font: 500 12px/1.5 var(--nt-font);
+  pointer-events: none;
+  .muted { color: #b7c7c0; }
+  &.flip { transform: translateX(calc(-100% - 8px)); }
+}
+
+.x-axis {
+  display: flex;
+  gap: 2px;
+  margin-top: 6px;
+  span { flex: 1; min-width: 0; text-align: center; font: 500 11px var(--nt-font); color: var(--nt-muted); }
+}
+
+.hbars { display: flex; flex-direction: column; gap: 12px; }
+.hrow { display: grid; grid-template-columns: 140px 1fr auto; align-items: center; gap: 12px; font-size: 14px; }
+.hkey { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.htrack { position: relative; height: 18px; }
+.hbar { position: absolute; left: 0; border-radius: 0 4px 4px 0; }
+.hbar--target { top: 0; bottom: 0; background: #e2ebe7; }
+.hbar--collected { top: 4px; bottom: 4px; background: var(--nt-brand); }
+.hval { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 13px; .muted { margin-left: 4px; } }
+
+// ---------------------------------------------------------------- table
+
+.table-card { background: var(--nt-surface); border-radius: var(--nt-radius-card); overflow-x: auto; }
+table { width: 100%; min-width: 640px; border-collapse: collapse; font: 500 14px var(--nt-font); }
+th { padding: 11px 8px; text-align: left; font: 600 12px var(--nt-font); color: var(--nt-muted); background: #fafbfa; }
+td { padding: 11px 8px; border-top: 1px solid #eef2f0; }
+th:first-child, td:first-child { padding-left: 18px; }
+th:last-child, td:last-child { padding-right: 18px; }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.empty { padding: 28px; text-align: center; color: var(--nt-muted); }
+tr.total td { font-weight: 700; border-top: 2px solid var(--nt-divider); }
+
+// ---------------------------------------------------------------- income
+
+.info {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--nt-radius);
+  background: var(--nt-brand-tint);
+  font: 500 13px/1.5 var(--nt-font);
+  color: var(--nt-ink);
+  > span:first-child { color: var(--nt-brand); font-weight: 700; }
+}
+
+.bar-col { width: 28%; }
+.mbar { height: 10px; border-radius: 999px; background: var(--nt-divider); overflow: hidden; > div { height: 100%; background: var(--nt-brand); border-radius: 999px; } }
+tr.future td { color: var(--nt-muted); }
+tr.current { background: #fafbfa; }

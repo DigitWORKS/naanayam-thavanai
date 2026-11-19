@@ -251,7 +251,7 @@ public class ReportService {
                 select %s as k, coalesce(sum(p.amount), 0),
                        coalesce(sum(case when p.mode = 'CASH' then p.amount else 0 end), 0),
                        coalesce(sum(case when p.mode = 'UPI' then p.amount else 0 end), 0),
-                       count(*)
+                       sum(case when p.entry_type = 'PAYMENT' then 1 else 0 end)
                 from payment p
                 join app_user u on u.id = p.collected_by
                 join loan l on l.id = p.loan_id
@@ -261,27 +261,42 @@ public class ReportService {
                 group by k
                 """.formatted(payKey), range);
 
+        // Target = dues in the period (same rule as the dashboard: not settled, loan not defaulted). By agent:
+        // dues in the agent's assigned areas — an area shared by two agents counts for both; owners have none.
         Map<String, BigDecimal> targets = new TreeMap<>();
-        if (groupBy != GroupBy.AGENT) {
-            String dueKey = groupBy == GroupBy.DAY ? "date_format(i.due_date, '%Y-%m-%d')" : "a.name";
-            for (Object[] r : rows("""
-                    select %s as k, coalesce(sum(i.due_amount), 0)
-                    from installment i
-                    join loan l on l.id = i.loan_id
-                    join client c on c.id = l.client_id
-                    join area a on a.id = c.area_id
-                    where i.tenant_id = :t and i.due_date between :from and :to and i.status <> 'SETTLED'
-                    group by k
-                    """.formatted(dueKey), dates)) {
-                targets.put((String) r[0], money(r[1]));
-            }
+        String dueSql = groupBy == GroupBy.AGENT
+                ? """
+                  select u.name as k, coalesce(sum(i.due_amount), 0)
+                  from user_area ua
+                  join app_user u on u.id = ua.user_id and u.role = 'AGENT'
+                  join client c on c.area_id = ua.area_id
+                  join loan l on l.client_id = c.id
+                  join installment i on i.loan_id = l.id
+                  where ua.tenant_id = :t and i.due_date between :from and :to
+                    and i.status <> 'SETTLED' and l.status <> 'DEFAULTED'
+                  group by k
+                  """
+                : """
+                  select %s as k, coalesce(sum(i.due_amount), 0)
+                  from installment i
+                  join loan l on l.id = i.loan_id
+                  join client c on c.id = l.client_id
+                  join area a on a.id = c.area_id
+                  where i.tenant_id = :t and i.due_date between :from and :to
+                    and i.status <> 'SETTLED' and l.status <> 'DEFAULTED'
+                  group by k
+                  """.formatted(groupBy == GroupBy.DAY ? "date_format(i.due_date, '%Y-%m-%d')" : "a.name");
+        for (Object[] r : rows(dueSql, dates)) {
+            targets.put((String) r[0], money(r[1]));
         }
 
         Map<String, CollectionRow> out = new TreeMap<>();
         for (Object[] r : paid) {
             String key = (String) r[0];
-            out.put(key, new CollectionRow(key, groupBy == GroupBy.AGENT ? null : targets.getOrDefault(key, ZERO),
-                    money(r[1]), money(r[2]), money(r[3]), ((Number) r[4]).longValue()));
+            // Agents without areas (and owners) have no target: null, not zero.
+            BigDecimal target = groupBy == GroupBy.AGENT ? targets.get(key) : targets.getOrDefault(key, ZERO);
+            out.put(key, new CollectionRow(key, target, money(r[1]), money(r[2]), money(r[3]),
+                    ((Number) r[4]).longValue()));
         }
         targets.forEach((key, target) -> out.putIfAbsent(key, new CollectionRow(key, target, ZERO, ZERO, ZERO, 0)));
         return new ArrayList<>(out.values());

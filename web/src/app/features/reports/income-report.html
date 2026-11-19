@@ -1,0 +1,73 @@
+<header class="top">
+  <div class="title">
+    <h1>Reports</h1>
+    <nav class="tabs" aria-label="Report">
+      <a class="tab" routerLink="/reports">Collections</a>
+      <span class="tab on" aria-current="page">Income for tax</span>
+    </nav>
+  </div>
+  <label><span class="visually-hidden">Financial year</span>
+    <select class="nt-select" (change)="pickFy($any($event.target).value)">
+      @for (y of years; track y.value) { <option [value]="y.value" [selected]="y.value === fy()">{{ y.label }}</option> }
+    </select>
+  </label>
+  <button type="button" class="nt-btn" [disabled]="!totals()" (click)="exportCsv()">Download for CA (CSV)</button>
+</header>
+
+<div class="info">
+  <span aria-hidden="true">ⓘ</span>
+  <span>Income is counted <b>when it is received</b>: interest and penalty in the month the client pays them,
+    pre-closure charges in the month the loan is closed. Interest deducted upfront is counted in the month the loan
+    is given. The CSV opens in Excel.</span>
+</div>
+
+@if (error()) {
+  <div class="card" role="alert"><p class="nt-error-text">{{ error() }} <button type="button" class="nt-link-btn" (click)="retry()">Retry</button></p></div>
+}
+
+<section class="stats" [class.stale]="loading()">
+  @let t = totals();
+  <div class="stat stat--brand"><span class="label">{{ isCurrent() ? 'Total income so far' : 'Total income' }}</span><span class="value">{{ t?.all ?? '…' }}</span></div>
+  <div class="stat"><span class="label">Interest</span><span class="value">{{ t?.interest ?? '…' }}</span></div>
+  <div class="stat"><span class="label">Late penalty</span><span class="value">{{ t?.penalty ?? '…' }}</span></div>
+  <div class="stat"><span class="label">Pre-closure charges</span><span class="value">{{ t?.preclosure ?? '…' }}</span></div>
+</section>
+
+<section class="table-card" [class.stale]="loading()">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Month</th>
+        <th scope="col" class="bar-col">Total income</th>
+        <th scope="col" class="num">Interest</th>
+        <th scope="col" class="num">Penalty</th>
+        <th scope="col" class="num">Pre-closure</th>
+        <th scope="col" class="num">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (r of months(); track r.key) {
+        <tr [class.future]="r.future" [class.current]="r.current">
+          <td class="strong">{{ r.label }}@if (r.current) { <span class="small muted"> · so far</span>}</td>
+          <td class="bar-col">@if (!r.future) { <div class="mbar"><div [style.width.%]="r.barPct"></div></div> }</td>
+          <td class="num">{{ r.interest }}</td>
+          <td class="num">{{ r.penalty }}</td>
+          <td class="num">{{ r.preclosure }}</td>
+          <td class="num strong">{{ r.total }}</td>
+        </tr>
+      } @empty {
+        <tr><td colspan="6" class="empty">{{ loading() ? 'Loading…' : 'No data.' }}</td></tr>
+      }
+      @if (totals(); as t) {
+        <tr class="total">
+          <td>{{ isCurrent() ? 'FY total so far' : 'FY total' }}</td>
+          <td></td>
+          <td class="num">{{ t.interest }}</td>
+          <td class="num">{{ t.penalty }}</td>
+          <td class="num">{{ t.preclosure }}</td>
+          <td class="num">{{ t.all }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</section>
