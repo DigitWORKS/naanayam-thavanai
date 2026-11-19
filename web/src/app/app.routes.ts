@@ -28,9 +28,15 @@ export const routes: Routes = [
     canMatch: [authGuard, roleGuard('OWNER')],
     loadComponent: () => import('./layout/owner-shell/owner-shell').then((m) => m.OwnerShell),
     children: [
-      ownerPage('dashboard', 'Dashboard'),
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.DashboardPage),
+        title: 'Dashboard · Naanayam Thavanai',
+      },
       ownerPage('today', "Today's collections"),
       ownerPage('clients', 'Clients'),
+      ownerPage('loans/new', 'New loan'),
+      ownerPage('loans/:loanId', 'Loan'),
       ownerPage('loans', 'Loans'),
       ownerPage('handovers', 'Cash handovers'),
       ownerPage('reports', 'Reports'),

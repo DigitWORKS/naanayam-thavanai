@@ -1,6 +1,8 @@
 package tn.digitworks.naanayamthavanai.report;
 
 import tn.digitworks.naanayamthavanai.common.ApiException;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +28,17 @@ public class ReportController {
     public ReportService.Dashboard dashboard(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return service.dashboard(date);
+    }
+
+    @GetMapping("/agents-today")
+    public List<ReportService.AgentDay> agentsToday(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return service.agentsDay(date);
+    }
+
+    @GetMapping("/most-behind")
+    public List<ReportService.BehindLoan> mostBehind(@RequestParam(defaultValue = "5") @Min(1) @Max(50) int limit) {
+        return service.mostBehind(limit);
     }
 
     @GetMapping("/collections")

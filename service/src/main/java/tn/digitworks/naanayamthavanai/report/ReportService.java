@@ -33,7 +33,27 @@ public class ReportService {
     public record Dashboard(LocalDate date, String businessName, String plan, LocalDate planExpiry,
                             BigDecimal todayTarget, BigDecimal todayCollected, BigDecimal todayCash,
                             BigDecimal todayUpi, BigDecimal totalOutstanding, BigDecimal overdueAmount,
-                            long overdueLoans, long activeLoans, long pendingHandovers) {
+                            long overdueLoans, long activeLoans, long pendingHandovers, long activeClients,
+                            BigDecimal penaltyDue, String fy, BigDecimal fyInterest) {
+    }
+
+    /** Today's handover of one agent (dashboard "Today by agent"). */
+    public record HandoverBrief(Long id, BigDecimal expectedAmount, BigDecimal handedAmount, String status,
+                                String remarks) {
+    }
+
+    /**
+     * One collector's day. {@code target} is the sum due that day in the agent's assigned areas (null for owners,
+     * who are not assigned areas); an area shared by two agents counts towards both.
+     */
+    public record AgentDay(Long userId, String name, String role, boolean active, List<String> areas,
+                           BigDecimal target, BigDecimal collected, BigDecimal cash, BigDecimal upi, long payments,
+                           HandoverBrief handover) {
+    }
+
+    /** An active loan behind schedule; arrears as in LoanBalances (past-due open + carried forward). */
+    public record BehindLoan(Long loanId, String loanNo, Long clientId, String clientName, String areaName,
+                             BigDecimal arrears, int installmentsBehind, LocalDate behindSince) {
     }
 
     /** target is null when grouping by AGENT (installments are not assigned to agents). */
@@ -89,14 +109,125 @@ public class ReportService {
                 where i.tenant_id = :t and l.status = 'ACTIVE'
                 """, Map.of("t", t, "d", Date.valueOf(day)));
 
-        long activeLoans = ((Number) single("select count(*) from loan where tenant_id = :t and status = 'ACTIVE'",
-                Map.of("t", t))).longValue();
+        Object[] active = row("""
+                select count(*), count(distinct client_id) from loan where tenant_id = :t and status = 'ACTIVE'
+                """, Map.of("t", t));
+
+        BigDecimal penaltyDue = money(single("""
+                select coalesce(sum(i.penalty_amount - i.penalty_paid), 0)
+                from installment i join loan l on l.id = i.loan_id
+                where i.tenant_id = :t and l.status = 'ACTIVE' and i.status <> 'SETTLED'
+                """, Map.of("t", t)));
+
+        int fyStart = day.getMonthValue() >= 4 ? day.getYear() : day.getYear() - 1;
+        InterestIncome fy = interestIncome(fyStart);
 
         Object[] tenant = row("select name, plan, plan_expiry from tenant where id = :t", Map.of("t", t));
 
         return new Dashboard(day, (String) tenant[0], (String) tenant[1], localDate(tenant[2]), target, money(coll[0]), money(coll[1]), money(coll[2]), money(bal[0]),
-                money(bal[1]), ((Number) bal[2]).longValue(), activeLoans,
-                handovers.countByTenantIdAndStatus(t, CashHandover.Status.PENDING));
+                money(bal[1]), ((Number) bal[2]).longValue(), ((Number) active[0]).longValue(),
+                handovers.countByTenantIdAndStatus(t, CashHandover.Status.PENDING), ((Number) active[1]).longValue(),
+                penaltyDue, fy.fy(), fy.totalInterestIncome());
+    }
+
+    // ------------------------------------------------------------------ agents today
+
+    /** Owners and agents: active ones, plus inactive ones who collected that day. Agents first, by name. */
+    @Transactional(readOnly = true)
+    public List<AgentDay> agentsDay(LocalDate date) {
+        long t = CurrentUser.get().requireTenant();
+        LocalDate day = date == null ? LocalDate.now(clock) : date;
+        Map<String, Object> range = Map.of("t", t, "from", day.atStartOfDay(), "to", day.plusDays(1).atStartOfDay());
+        Map<String, Object> onDay = Map.of("t", t, "d", Date.valueOf(day));
+
+        Map<Long, List<String>> areas = new java.util.HashMap<>();
+        for (Object[] r : rows("""
+                select ua.user_id, a.name from user_area ua join area a on a.id = ua.area_id
+                where ua.tenant_id = :t order by a.name
+                """, Map.of("t", t))) {
+            areas.computeIfAbsent(id(r[0]), k -> new ArrayList<>()).add((String) r[1]);
+        }
+
+        Map<Long, BigDecimal> targets = new java.util.HashMap<>();
+        for (Object[] r : rows("""
+                select ua.user_id, coalesce(sum(i.due_amount), 0)
+                from user_area ua
+                join client c on c.area_id = ua.area_id
+                join loan l on l.client_id = c.id
+                join installment i on i.loan_id = l.id
+                where ua.tenant_id = :t and i.due_date = :d and i.status <> 'SETTLED' and l.status <> 'DEFAULTED'
+                group by ua.user_id
+                """, onDay)) {
+            targets.put(id(r[0]), money(r[1]));
+        }
+
+        Map<Long, Object[]> paid = new java.util.HashMap<>();
+        for (Object[] r : rows("""
+                select collected_by, coalesce(sum(amount), 0),
+                       coalesce(sum(case when mode = 'CASH' then amount else 0 end), 0),
+                       coalesce(sum(case when mode = 'UPI' then amount else 0 end), 0),
+                       sum(case when entry_type = 'PAYMENT' then 1 else 0 end)
+                from payment
+                where tenant_id = :t and paid_on >= :from and paid_on < :to
+                group by collected_by
+                """, range)) {
+            paid.put(id(r[0]), r);
+        }
+
+        Map<Long, HandoverBrief> handed = new java.util.HashMap<>();
+        for (Object[] r : rows("""
+                select agent_id, id, expected_amount, handed_amount, status, remarks
+                from cash_handover where tenant_id = :t and handover_date = :d
+                """, onDay)) {
+            handed.put(id(r[0]), new HandoverBrief(id(r[1]), money(r[2]), money(r[3]), (String) r[4], (String) r[5]));
+        }
+
+        List<AgentDay> out = new ArrayList<>();
+        for (Object[] u : rows("""
+                select id, name, role, is_active from app_user
+                where tenant_id = :t and role in ('OWNER', 'AGENT')
+                order by role = 'OWNER', name
+                """, Map.of("t", t))) {
+            long userId = id(u[0]);
+            boolean isActive = u[3] instanceof Boolean b ? b : ((Number) u[3]).intValue() != 0;
+            Object[] p = paid.get(userId);
+            if (!isActive && p == null) {
+                continue;
+            }
+            boolean agent = "AGENT".equals(u[2]);
+            out.add(new AgentDay(userId, (String) u[1], (String) u[2], isActive,
+                    areas.getOrDefault(userId, List.of()),
+                    agent ? targets.getOrDefault(userId, ZERO) : null,
+                    p == null ? ZERO : money(p[1]), p == null ? ZERO : money(p[2]), p == null ? ZERO : money(p[3]),
+                    p == null ? 0 : ((Number) p[4]).longValue(), handed.get(userId)));
+        }
+        return out;
+    }
+
+    // ------------------------------------------------------------------ most behind
+
+    @Transactional(readOnly = true)
+    public List<BehindLoan> mostBehind(int limit) {
+        long t = CurrentUser.get().requireTenant();
+        LocalDate today = LocalDate.now(clock);
+        Query q = query("""
+                select l.id, l.loan_no, c.id, c.name, a.name, sum(i.due_amount - i.paid_amount) as arrears,
+                       count(*), min(i.due_date) as since
+                from installment i
+                join loan l on l.id = i.loan_id
+                join client c on c.id = l.client_id
+                join area a on a.id = c.area_id
+                where i.tenant_id = :t and l.status = 'ACTIVE' and i.status in ('PENDING', 'PARTIAL')
+                  and i.due_amount > i.paid_amount
+                  and (i.due_date < :d or (i.is_extension = 1 and i.due_date <> :d))
+                group by l.id, l.loan_no, c.id, c.name, a.name
+                order by arrears desc, since
+                """, Map.of("t", t, "d", Date.valueOf(today)));
+        q.setMaxResults(limit);
+        @SuppressWarnings("unchecked")
+        List<Object[]> result = q.getResultList();
+        return result.stream().map(r -> new BehindLoan(id(r[0]), (String) r[1], id(r[2]), (String) r[3],
+                (String) r[4], money(r[5]), ((Number) r[6]).intValue(), localDate(r[7]))).toList();
     }
 
     // ------------------------------------------------------------------ collections
@@ -232,6 +363,10 @@ public class ReportService {
         Query q = em.createNativeQuery(sql);
         params.forEach(q::setParameter);
         return q;
+    }
+
+    private static long id(Object v) {
+        return ((Number) v).longValue();
     }
 
     /** DATE columns come back from native queries as java.sql.Date or LocalDate depending on the driver. */

@@ -1,0 +1,205 @@
+<header class="top">
+  <div class="greeting">
+    <span class="date">{{ dateText() }}</span>
+    <h1>Vanakkam{{ firstName() ? ', ' + firstName() : '' }}</h1>
+  </div>
+  <form class="search" role="search" (submit)="submitSearch($event)">
+    <span aria-hidden="true">⌕</span>
+    <label class="visually-hidden" for="dash-search">Search clients</label>
+    <input id="dash-search" type="search" placeholder="Search client, phone or loan no."
+           [value]="search()" (input)="search.set($any($event.target).value)" />
+  </form>
+  <a class="nt-btn" routerLink="/loans/new">+ New loan</a>
+</header>
+
+@if (loadError()) {
+  <div class="nt-card error-card" role="alert">
+    <span>Could not load the dashboard. Check your connection.</span>
+    <button type="button" class="nt-btn nt-btn--outline" (click)="reloadAll()">Retry</button>
+  </div>
+}
+
+<section class="stats" aria-label="Today and totals">
+  @let c = cards();
+  <div class="stat stat--brand">
+    <span class="stat-label">Collected today</span>
+    <span class="stat-value">{{ c?.collected ?? '…' }}</span>
+    <div class="bar bar--on-brand" role="progressbar" aria-label="Collected of today's target"
+         [attr.aria-valuenow]="c?.collectedPct ?? 0" aria-valuemin="0" aria-valuemax="100">
+      <div [style.width.%]="c?.collectedPct ?? 0"></div>
+    </div>
+    @if (c) {
+      <span class="stat-note">
+        @if (c.hasTarget) { {{ c.collectedPct }}% of {{ c.target }} · } Cash {{ c.cash }} · UPI {{ c.upi }}
+      </span>
+    }
+  </div>
+  <div class="stat">
+    <span class="stat-label">Outstanding</span>
+    <span class="stat-value">{{ c?.outstanding ?? '…' }}</span>
+    @if (c) {
+      <span class="stat-note">{{ c.activeLoans }} active {{ c.activeLoans === 1 ? 'loan' : 'loans' }} ·
+        {{ c.activeClients }} {{ c.activeClients === 1 ? 'client' : 'clients' }}</span>
+    }
+  </div>
+  <div class="stat">
+    <span class="stat-label">Behind schedule</span>
+    <span class="stat-value stat-value--warn">{{ c?.behind ?? '…' }}</span>
+    @if (c) {
+      <span class="stat-note">{{ c.behindLoans }} {{ c.behindLoans === 1 ? 'loan' : 'loans' }}@if (c.penaltyDue.isPositive) { · penalty due {{ c.penaltyDue.format() }}}</span>
+    }
+  </div>
+  <div class="stat">
+    <span class="stat-label">Interest earned{{ c ? ' · FY ' + c.fy : '' }}</span>
+    <span class="stat-value">{{ c?.fyInterest ?? '…' }}</span>
+    @if (c) {
+      <span class="stat-note">{{ c.fyMonths }} · for income tax</span>
+    }
+  </div>
+</section>
+
+<section class="pair">
+  <div class="nt-card panel">
+    <div class="panel-head">
+      <h2>Today by agent</h2>
+      <span class="hint">collected / target</span>
+    </div>
+    @if (agentsError()) {
+      <p class="muted">Could not load. <button type="button" class="link" (click)="reloadAll()">Retry</button></p>
+    } @else if (agentsLoading()) {
+      <p class="muted">Loading…</p>
+    } @else {
+      <table class="grid">
+        <thead>
+          <tr>
+            <th scope="col">Agent</th>
+            <th scope="col">Areas</th>
+            <th scope="col" class="num">Collected</th>
+            <th scope="col" class="num">Target</th>
+            <th scope="col" class="num">Cash in hand</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of agents(); track a.id) {
+            <tr>
+              <td class="strong">{{ a.name }}@if (a.inactive) { <span class="tag">inactive</span>}</td>
+              <td class="muted">{{ a.areas }}</td>
+              <td class="num strong">{{ a.collected }}</td>
+              <td class="num muted">{{ a.target }}</td>
+              <td class="num" [class.muted]="a.inHand === '—'">
+                {{ a.inHand }}
+                @if (a.handoverNote) { <span class="sub">{{ a.handoverNote }}</span> }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="muted">No agents yet. Add them under Agents &amp; areas.</td></tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  <div class="nt-card panel">
+    <div class="panel-head">
+      <h2>Today by area</h2>
+      <span class="hint">collected / target</span>
+    </div>
+    @if (areasError()) {
+      <p class="muted">Could not load. <button type="button" class="link" (click)="reloadAll()">Retry</button></p>
+    } @else if (areasLoading()) {
+      <p class="muted">Loading…</p>
+    } @else {
+      @for (a of areas(); track a.name) {
+        <div class="area">
+          <div class="area-row">
+            <span>{{ a.name }}</span>
+            <span>{{ a.collected }}@if (a.hasTarget) { · {{ a.pct }}%}</span>
+          </div>
+          <div class="bar" role="progressbar" [attr.aria-label]="a.name + ': collected of ' + a.target"
+               [attr.aria-valuenow]="a.pct" aria-valuemin="0" aria-valuemax="100">
+            <div [style.width.%]="a.pct"></div>
+          </div>
+        </div>
+      } @empty {
+        <p class="muted">Nothing due today.</p>
+      }
+    }
+  </div>
+</section>
+
+<section class="pair">
+  <div class="nt-card panel">
+    <div class="panel-head">
+      <h2>Cash handovers</h2>
+      @if (handovers().length) {
+        <span class="pill pill--warn">{{ handovers().length }} to confirm</span>
+      }
+    </div>
+    @if (confirmError()) {
+      <p class="nt-error-text" role="alert">{{ confirmError() }}</p>
+    }
+    @if (handoversError()) {
+      <p class="muted">Could not load. <button type="button" class="link" (click)="reloadAll()">Retry</button></p>
+    } @else if (handoversLoading()) {
+      <p class="muted">Loading…</p>
+    } @else {
+      @for (h of handovers(); track h.source.id) {
+        <div class="row">
+          <div class="row-text">
+            <span class="strong">{{ h.title }}</span>
+            <span class="small" [class.warn]="!h.matches">{{ h.detail }}</span>
+          </div>
+          @if (h.matches) {
+            <button type="button" class="nt-btn btn-sm" [disabled]="confirming() === h.source.id"
+                    (click)="confirm(h.source)">
+              {{ confirming() === h.source.id ? 'Confirming…' : 'Confirm' }}
+            </button>
+          } @else {
+            <button type="button" class="nt-btn nt-btn--outline btn-sm btn-dark" (click)="reviewing.set(h.source)">
+              Review
+            </button>
+          }
+        </div>
+      } @empty {
+        <p class="muted">Nothing to confirm.</p>
+      }
+    }
+  </div>
+
+  <div class="nt-card panel">
+    <div class="panel-head">
+      <h2>Most behind</h2>
+      @if (cards(); as c) {
+        @if (c.behindLoans > 0) {
+          <a class="more" routerLink="/loans" [queryParams]="{ filter: 'behind' }">
+            All {{ c.behindLoans }} {{ c.behindLoans === 1 ? 'loan' : 'loans' }} →
+          </a>
+        }
+      }
+    </div>
+    @if (behindError()) {
+      <p class="muted">Could not load. <button type="button" class="link" (click)="reloadAll()">Retry</button></p>
+    } @else if (behindLoading()) {
+      <p class="muted">Loading…</p>
+    } @else {
+      <table class="grid">
+        <tbody>
+          @for (l of behind(); track l.loanId) {
+            <tr>
+              <td><a class="client" [routerLink]="['/loans', l.loanId]">{{ l.client }}</a>
+                <span class="muted"> · {{ l.loanNo }}</span></td>
+              <td class="muted">{{ l.area }}</td>
+              <td class="num warn strong">{{ l.text }}</td>
+            </tr>
+          } @empty {
+            <tr><td class="muted">No loans behind schedule.</td></tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</section>
+
+@if (reviewing(); as h) {
+  <nt-handover-review [handover]="h" [decide]="decide" (closed)="reviewing.set(null)" />
+}

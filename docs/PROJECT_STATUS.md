@@ -199,8 +199,21 @@ API clients generated from `api-spec/openapi.yaml`:
       admin shell, agents refused), owner shell with the design's side menu (business name / plan days / pending
       handovers via httpResource), admin shell, login (design W1), placeholder pages for every menu item. Dev and
       production builds pass (initial 268 kB, 75 kB transfer); 10 Vitest tests pass.
-- [ ] Web next: backend API gaps for the web design, then pages: dashboard, loans + loan detail, clients, cash
-      handovers, agents & areas, settings, reports, Super Admin financiers.
+- [~] Web slice 1 written (to verify): owner Dashboard (design board "Web owner dashboard") — date + greeting,
+      search (goes to Clients with ?q), + New loan; cards: collected today vs target with cash / UPI, outstanding
+      (active loans, clients), behind schedule (loans, penalty due), interest earned this FY; Today by agent
+      (areas, collected, target, cash in hand = cash less a confirmed handover, handover state; owner row "You");
+      Today by area (bars, sorted by target); Cash handovers to confirm (one-click Confirm when it matches, Review
+      dialog to confirm or dispute when it differs; refreshes the menu badge); Most behind (top 5, days since the
+      oldest unpaid due). Side menu and dashboard share one GET /reports/dashboard. Checked against a mock API at
+      1440 and 900 px. Backend: /reports/dashboard adds activeClients, penaltyDue, fy, fyInterest; new
+      GET /reports/agents-today and GET /reports/most-behind (owner); spec now 47 operations.
+      Known: an owner's note on confirm / dispute replaces the agent's note (cash_handover has one remarks
+      column); the dialog says so. Fix later with a separate owner_remarks column.
+- [ ] Web next: pages — loans + loan detail, clients, cash handovers, agents & areas, settings, reports, Super
+      Admin financiers; with their API gaps (loans q / area / frequency / behind filters, sort and CSV; area client
+      counts and agents; missed→extension link; admin search and expiring soon; owner PIN reset; agent's day cash
+      list; income export).
 - [ ] Tamil version: no separate design; done in code (Flutter ARB / Angular i18n) after the web app and the
       remaining functionality are complete. Noto Sans Tamil is already in both designs.
 - [x] API gaps found while designing: `409 CLIENT_EXISTS` now returns `details` {clientId, name, areaId,

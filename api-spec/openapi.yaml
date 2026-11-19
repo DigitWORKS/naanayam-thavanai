@@ -887,6 +887,45 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Dashboard' }
 
+  /reports/agents-today:
+    get:
+      tags: [Reports]
+      summary: Each collector's day (owner dashboard "Today by agent")
+      description: >
+        Active owners and agents, plus inactive ones who collected that day; agents first, by name.
+        target is the sum due that day in the agent's assigned areas (null for owners); an area shared by
+        two agents counts towards both.
+      parameters:
+        - name: date
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: One row per collector
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AgentDay' }
+
+  /reports/most-behind:
+    get:
+      tags: [Reports]
+      summary: Active loans furthest behind schedule, by arrears
+      description: Arrears = open amount of past-due installments plus carried-forward (extension) installments.
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 5 }
+      responses:
+        '200':
+          description: Loans, largest arrears first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/BehindLoan' }
+
   /reports/collections:
     get:
       tags: [Reports]
@@ -1592,6 +1631,47 @@ components:
         overdueLoans: { type: integer }
         activeLoans: { type: integer }
         pendingHandovers: { type: integer }
+        activeClients: { type: integer, description: Clients with at least one active loan }
+        penaltyDue: { $ref: '#/components/schemas/Money' }
+        fy: { type: string, example: 2026-27, description: Financial year of date }
+        fyInterest: { $ref: '#/components/schemas/Money' }
+    AgentDay:
+      type: object
+      properties:
+        userId: { type: integer, format: int64 }
+        name: { type: string }
+        role: { type: string, enum: [OWNER, AGENT] }
+        active: { type: boolean }
+        areas: { type: array, items: { type: string } }
+        target:
+          type: string
+          nullable: true
+          description: Null for owners
+          example: '21600.00'
+        collected: { $ref: '#/components/schemas/Money' }
+        cash: { $ref: '#/components/schemas/Money' }
+        upi: { $ref: '#/components/schemas/Money' }
+        payments: { type: integer, description: Payments (not reversals) recorded }
+        handover:
+          nullable: true
+          type: object
+          properties:
+            id: { type: integer, format: int64 }
+            expectedAmount: { $ref: '#/components/schemas/Money' }
+            handedAmount: { $ref: '#/components/schemas/Money' }
+            status: { type: string, enum: [PENDING, CONFIRMED, DISPUTED] }
+            remarks: { type: string, nullable: true }
+    BehindLoan:
+      type: object
+      properties:
+        loanId: { type: integer, format: int64 }
+        loanNo: { type: string }
+        clientId: { type: integer, format: int64 }
+        clientName: { type: string }
+        areaName: { type: string }
+        arrears: { $ref: '#/components/schemas/Money' }
+        installmentsBehind: { type: integer }
+        behindSince: { type: string, format: date, description: Oldest unpaid due date counted in arrears }
     CollectionReportRow:
       type: object
       properties:
