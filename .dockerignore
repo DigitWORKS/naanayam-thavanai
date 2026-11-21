@@ -1,0 +1,14 @@
+# Build context is the repo root (service needs db/migrations). Send only what the images use.
+**/.git
+**/.idea
+**/.gradle
+**/build
+**/node_modules
+web/dist
+web/.angular
+mobile
+docs
+api-spec
+**/.env
+**/*.jks
+**/*.log

@@ -20,6 +20,7 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'TRIAL', label: 'Trial' },
   { id: 'ACTIVE', label: 'Active' },
   { id: 'SUSPENDED', label: 'Suspended' },
+  { id: 'CLOSED', label: 'Deleted' },
   { id: 'EXPIRING', label: 'Expiring in 7 days' },
 ];
 const asFilter = (v: unknown): Filter => (FILTERS.some((f) => f.id === v) ? (v as Filter) : 'ALL');
@@ -82,6 +83,7 @@ export class BusinessesPage {
   readonly rows = computed(() => {
     const today = todayIso();
     return (safeValue(this.listRes)?.content ?? []).map((x) => {
+      const closed = x.status === 'CLOSED' && !!x.eraseOn;
       const expired = !!x.planExpiry && x.planExpiry < today;
       const soon = !!x.planExpiry && !expired && daysBetween(today, x.planExpiry) < 7;
       return {
@@ -91,10 +93,11 @@ export class BusinessesPage {
         owner: x.ownerName,
         phone: formatPhone(x.phone),
         plan: x.plan ? PLAN_LABEL[x.plan] : '—',
-        expires: x.planExpiry ? longDate(x.planExpiry) : '—',
-        expiresClass: x.status === 'SUSPENDED' ? '' : expired ? 'danger' : soon ? 'warn' : '',
-        status: x.status === 'SUSPENDED' ? 'Suspended' : expired ? 'Expired' : x.status === 'TRIAL' ? 'Trial' : 'Active',
-        statusClass: x.status === 'SUSPENDED' || expired ? 'nt-tag--danger' : soon ? 'nt-tag--warn' : 'nt-tag--ok',
+        expires: closed ? `Erased ${longDate(x.eraseOn!)}` : x.planExpiry ? longDate(x.planExpiry) : '—',
+        expiresClass: closed ? 'danger' : x.status === 'SUSPENDED' ? '' : expired ? 'danger' : soon ? 'warn' : '',
+        status: closed ? 'Deleted' : x.status === 'SUSPENDED' ? 'Suspended' : expired ? 'Expired'
+          : x.status === 'TRIAL' ? 'Trial' : 'Active',
+        statusClass: closed || x.status === 'SUSPENDED' || expired ? 'nt-tag--danger' : soon ? 'nt-tag--warn' : 'nt-tag--ok',
         selected: x.id === this.t(),
       };
     });

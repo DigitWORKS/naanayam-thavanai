@@ -17,7 +17,11 @@ import java.time.LocalDateTime;
 @Table(name = "tenant")
 public class Tenant {
 
-    public enum Status { TRIAL, ACTIVE, SUSPENDED }
+    /** CLOSED: the owner deleted the account; data is erased on {@link #getEraseOn()} unless restored. */
+    public enum Status { TRIAL, ACTIVE, SUSPENDED, CLOSED }
+
+    /** Days between the owner's delete request and the data being erased. */
+    public static final int ERASE_AFTER_DAYS = 30;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,6 +54,14 @@ public class Tenant {
     @Column(name = "terms_accepted_at")
     private LocalDateTime termsAcceptedAt;
 
+    /** When the owner deleted the account (status CLOSED). */
+    @Column(name = "closed_at")
+    private LocalDateTime closedAt;
+
+    /** Date the nightly job erases this business's data. */
+    @Column(name = "erase_on")
+    private LocalDate eraseOn;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -68,14 +80,34 @@ public class Tenant {
     public void applyPlan(Plan newPlan, LocalDate today) {
         this.planExpiry = newPlan.renewedExpiry(planExpiry, today);
         this.plan = newPlan;
-        if (status != Status.SUSPENDED) {
+        if (status != Status.SUSPENDED && status != Status.CLOSED) {
             this.status = newPlan.status();
         }
     }
 
+    /** Owner deleted the account: nobody can sign in, and the data is erased {@value #ERASE_AFTER_DAYS} days later. */
+    public void close(LocalDateTime now) {
+        this.status = Status.CLOSED;
+        this.closedAt = now;
+        this.eraseOn = now.toLocalDate().plusDays(ERASE_AFTER_DAYS);
+    }
+
+    /** Super Admin undoes a closure before the erase date; the status follows the plan again. */
+    public void restore() {
+        this.status = plan == null ? Status.ACTIVE : plan.status();
+        this.closedAt = null;
+        this.eraseOn = null;
+    }
+
     /** True when users of this tenant may sign in on {@code today}. */
     public boolean isUsable(LocalDate today) {
-        return status != Status.SUSPENDED && (planExpiry == null || !planExpiry.isBefore(today));
+        return usable(status, planExpiry, today);
+    }
+
+    /** Shared with the per-request token check, which reads the two columns without loading the entity. */
+    public static boolean usable(Status status, LocalDate planExpiry, LocalDate today) {
+        return (status == Status.TRIAL || status == Status.ACTIVE)
+                && (planExpiry == null || !planExpiry.isBefore(today));
     }
 
     public Long getId() { return id; }
@@ -94,6 +126,8 @@ public class Tenant {
     public void setTermsAcceptedAt(LocalDateTime termsAcceptedAt) { this.termsAcceptedAt = termsAcceptedAt; }
     public LocalDate getPlanExpiry() { return planExpiry; }
     public void setPlanExpiry(LocalDate planExpiry) { this.planExpiry = planExpiry; }
+    public LocalDateTime getClosedAt() { return closedAt; }
+    public LocalDate getEraseOn() { return eraseOn; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

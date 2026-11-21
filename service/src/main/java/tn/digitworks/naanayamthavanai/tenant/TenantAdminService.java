@@ -80,6 +80,12 @@ public class TenantAdminService {
     @Transactional
     public TenantResponse update(long id, TenantUpdate in) {
         Tenant t = find(id);
+        if (t.getStatus() == Tenant.Status.CLOSED) {
+            throw ApiException.rule("TENANT_CLOSED", "The owner deleted this business. Restore it before changing it.");
+        }
+        if (in.status() == Tenant.Status.CLOSED) {
+            throw ApiException.rule("INVALID_STATUS", "Only the owner can delete the business account");
+        }
         if (in.status() == Tenant.Status.SUSPENDED) {
             t.setStatus(Tenant.Status.SUSPENDED);
         } else if (in.status() != null && t.getStatus() == Tenant.Status.SUSPENDED) {
@@ -95,6 +101,17 @@ public class TenantAdminService {
         if (in.licenceNo() != null) {
             t.setLicenceNo(in.licenceNo().isBlank() ? null : in.licenceNo().trim());
         }
+        return TenantResponse.of(t);
+    }
+
+    /** Undoes the owner's delete request before the erase date. Users sign in again with their existing PINs. */
+    @Transactional
+    public TenantResponse restore(long id) {
+        Tenant t = find(id);
+        if (t.getStatus() != Tenant.Status.CLOSED) {
+            throw ApiException.rule("NOT_CLOSED", "This business is not closed");
+        }
+        t.restore();
         return TenantResponse.of(t);
     }
 

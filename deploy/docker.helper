@@ -1,0 +1,142 @@
+# Naanayam — Docker quick reference
+# Run everything from the deploy/ folder (it holds docker-compose.yml and .env):
+#   cd ~/naanayam-thavanai/deploy
+# Services: db (MySQL 8.4) · api (Spring Boot) · web (Nginx: Angular + /v1 proxy)
+# Volumes:  naanayam_db-data · naanayam_documents · naanayam_certbot-www
+
+########################################################################
+# Start / stop / rebuild
+########################################################################
+docker compose up -d --build            # build images and start everything (first time, after code changes)
+docker compose up -d                    # start, or apply .env changes, without rebuilding
+docker compose up -d --build api        # rebuild + restart only the API
+docker compose up -d --build web        # rebuild + restart only the web (Angular/Nginx)
+docker compose build --no-cache api     # clean rebuild (ignore cached layers)
+docker compose restart api              # restart without rebuilding
+docker compose stop                     # stop, keep containers and data
+docker compose start                    # start stopped containers
+docker compose down                     # remove containers + network, KEEP data (volumes)
+
+########################################################################
+# Update to the latest code
+########################################################################
+cd ~/naanayam-thavanai && git pull && cd deploy
+docker compose up -d --build
+docker image prune -f
+
+########################################################################
+# Status and logs
+########################################################################
+docker compose ps                       # running containers, health, ports
+docker compose logs -f api              # follow API logs (Ctrl+C to exit)
+docker compose logs --tail 200 api      # last 200 lines
+docker compose logs --since 30m api     # last 30 minutes
+docker compose logs -f web              # Nginx access/error log
+docker compose logs -f db               # MySQL log
+docker compose logs api | grep -i error # search for errors
+docker stats                            # live CPU / memory per container (Ctrl+C to exit)
+docker compose top                      # processes inside each container
+
+########################################################################
+# Health checks
+########################################################################
+curl http://localhost/v1/actuator/health                     # through Nginx -> {"status":"UP"}
+curl -I http://localhost/                                    # web app responds (200)
+docker compose exec db mysqladmin ping -h 127.0.0.1          # "mysqld is alive"
+docker inspect --format '{{.State.Health.Status}}' naanayam-db-1   # db health
+
+########################################################################
+# Shells
+########################################################################
+docker compose exec api sh              # shell in the API container
+docker compose exec web sh              # shell in Nginx
+docker compose exec db bash             # shell in MySQL container
+
+########################################################################
+# MySQL
+########################################################################
+# App user shell (naanayam database)
+docker compose exec db sh -c 'mysql -unaanayam -p"$MYSQL_PASSWORD" naanayam'
+# Root shell
+docker compose exec db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD"'
+# One-off query
+docker compose exec db sh -c 'mysql -unaanayam -p"$MYSQL_PASSWORD" naanayam -e "SELECT COUNT(*) FROM client"'
+# Flyway migrations applied
+docker compose exec db sh -c 'mysql -unaanayam -p"$MYSQL_PASSWORD" naanayam -e "SELECT version, description, success, installed_on FROM flyway_schema_history ORDER BY installed_rank"'
+# Table sizes
+docker compose exec db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT table_name, ROUND((data_length+index_length)/1024/1024,2) AS mb FROM information_schema.tables WHERE table_schema=\"naanayam\" ORDER BY mb DESC"'
+
+########################################################################
+# Backup and restore
+########################################################################
+./backup.sh                             # DB dump + documents into /var/backups/naanayam (14 days kept)
+ls -lh /var/backups/naanayam            # list backups
+
+# Manual DB dump to the current folder
+docker compose exec -T db sh -c 'exec mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --single-transaction --routines --triggers naanayam' | gzip > naanayam-$(date +%F-%H%M).sql.gz
+
+# Restore a DB dump (stop the API first so nothing writes during the restore)
+docker compose stop api
+gunzip -c /var/backups/naanayam/db-YYYY-MM-DD-HHMM.sql.gz | docker compose exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" naanayam'
+docker compose start api
+
+# Restore uploaded documents
+docker run --rm -v naanayam_documents:/d -v /var/backups/naanayam:/b alpine sh -c 'cd /d && tar xzf /b/documents-YYYY-MM-DD-HHMM.tgz'
+
+########################################################################
+# Files in and out of containers
+########################################################################
+docker compose cp api:/data/documents ./documents-copy       # copy out
+docker compose cp ./some-file api:/tmp/                      # copy in
+docker compose exec api ls -lh /data/documents               # list uploaded documents
+
+########################################################################
+# Config and environment
+########################################################################
+docker compose config                   # final compose file with .env values filled in (shows secrets!)
+docker compose config --services        # list services
+docker compose exec api env | sort      # environment inside the API (shows secrets!)
+nano .env && docker compose up -d       # change a setting and apply it
+
+########################################################################
+# Images, volumes, disk
+########################################################################
+docker images                           # images and sizes
+docker volume ls                        # volumes
+docker volume inspect naanayam_db-data  # where the DB data lives on the host
+docker system df                        # disk used by images, containers, volumes, build cache
+df -h /                                 # free disk on the VM
+
+########################################################################
+# Cleanup
+########################################################################
+docker image prune -f                   # remove dangling images left by rebuilds
+docker image prune -a -f                # remove all unused images (re-download on next build)
+docker builder prune -f                 # clear the build cache (next build is slower)
+docker container prune -f               # remove stopped containers
+# Never "docker volume prune" or "docker system prune --volumes" on the real server: it deletes data.
+
+########################################################################
+# Rollback (keep the previous API image before an update)
+########################################################################
+docker tag naanayam-api naanayam-api:previous        # before: docker compose up -d --build
+# If the new version misbehaves:
+docker tag naanayam-api:previous naanayam-api
+docker compose up -d --no-build api
+# A DB migration (Flyway) is not undone by this; restore a backup if a migration must be reversed.
+
+########################################################################
+# Troubleshooting
+########################################################################
+docker compose ps -a                    # also shows containers that exited
+docker compose logs api | head -100     # startup errors (Flyway, DB connection, missing JWT_SECRET)
+docker compose exec web nginx -t        # check Nginx config
+docker compose exec web nginx -s reload # reload Nginx config without restart
+docker compose exec web wget -qO- http://api:8080/v1/actuator/health   # API directly, bypassing Nginx's proxy rules
+sudo ss -tlnp | grep -E ':80|:443'      # what is listening on the host ports
+sudo systemctl restart docker           # last resort: restart the Docker daemon
+
+########################################################################
+# Full reset — DELETES ALL DATA (test VM only, never on the real server)
+########################################################################
+docker compose down -v                  # removes containers AND volumes (database, documents)

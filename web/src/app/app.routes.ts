@@ -10,6 +10,12 @@ export const routes: Routes = [
     title: 'Log in · Naanayam Thavanai',
   },
   {
+    // Public: linked from Google Play (account deletion). Open whether or not someone is logged in.
+    path: 'delete-account',
+    loadComponent: () => import('./features/legal/delete-account').then((m) => m.DeleteAccountPage),
+    title: 'Delete account · Naanayam Thavanai',
+  },
+  {
     path: 'admin',
     canMatch: [authGuard, roleGuard('SUPER_ADMIN')],
     loadComponent: () => import('./layout/admin-shell/admin-shell').then((m) => m.AdminShell),

@@ -85,6 +85,46 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
 
+  /auth/delete-account:
+    post:
+      tags: [Auth]
+      summary: Delete the business account (owner)
+      description: >
+        Owner confirms with their PIN. The business is closed at once and every login of it is signed out;
+        all its data (users, areas, clients, documents, loans, payments, handovers, settings) is erased by a
+        nightly job 30 days later. Until then a Super Admin can restore it (POST /admin/tenants/{id}/restore).
+        Logging in to a closed business returns 403 TENANT_CLOSED. Wrong PIN is 422 WRONG_PIN; shares the
+        5-per-15-minutes limit with change-PIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pin]
+              properties:
+                pin: { type: string, pattern: '^\d{4,6}$' }
+      responses:
+        '200':
+          description: Closed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eraseOn: { type: string, format: date, description: Date the data is erased }
+        '403':
+          description: Not an owner
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429':
+          description: TOO_MANY_ATTEMPTS
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
   /auth/register:
     post:
       tags: [Auth]
@@ -242,6 +282,25 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Tenant' }
+
+  /admin/tenants/{tenantId}/restore:
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    post:
+      tags: [Admin]
+      summary: Restore a business the owner deleted (before its erase date)
+      description: Status follows the plan again and users log in with their existing PINs. 422 NOT_CLOSED otherwise.
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Tenant' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
 
   /admin/jobs/missed-installments:
     post:
@@ -1282,7 +1341,8 @@ components:
       enum: [SUPER_ADMIN, OWNER, AGENT]
     TenantStatus:
       type: string
-      enum: [TRIAL, ACTIVE, SUSPENDED]
+      enum: [TRIAL, ACTIVE, SUSPENDED, CLOSED]
+      description: CLOSED = the owner deleted the account; erased on eraseOn unless restored.
     Plan:
       type: string
       enum: [TRIAL, MONTHLY, YEARLY]
@@ -1372,6 +1432,8 @@ components:
           nullable: true
           description: Set when the owner self-registered
         createdAt: { type: string, format: date-time }
+        closedAt: { type: string, format: date-time, nullable: true, description: When the owner deleted the account }
+        eraseOn: { type: string, format: date, nullable: true, description: Date the data is erased (CLOSED only) }
     TenantCreate:
       type: object
       required: [name, ownerName, phone, ownerPin, maxInterestRate]
@@ -1399,6 +1461,8 @@ components:
           description: >
             SUSPENDED suspends: the business's users are signed out on their next request and cannot log in.
             Any other value lifts a suspension; the status then follows the plan (TRIAL for a trial).
+            CLOSED cannot be set here (422 INVALID_STATUS), and a CLOSED tenant cannot be updated
+            (422 TENANT_CLOSED) until restored.
         plan:
           allOf:
             - $ref: '#/components/schemas/Plan'

@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -56,6 +57,19 @@ public class AuthController {
             throw tooMany();
         }
         return service.changePin(in.currentPin(), in.newPin());
+    }
+
+    /**
+     * Owner deletes the business account (Play account-deletion requirement). Shares the PIN-attempt limit
+     * with change-PIN.
+     */
+    @PostMapping("/delete-account")
+    @PreAuthorize("hasRole('OWNER')")
+    public UserDtos.DeleteAccountResponse deleteAccount(@Valid @RequestBody UserDtos.DeleteAccountRequest in) {
+        if (!rateLimiter.tryAcquire("pin:" + CurrentUser.get().userId(), PIN_CHANGE_ATTEMPTS, Duration.ofMinutes(15))) {
+            throw tooMany();
+        }
+        return service.deleteAccount(in.pin());
     }
 
     static final int LOGIN_ATTEMPTS = 10;

@@ -1,6 +1,7 @@
 /** Wire types of the Super Admin tenant endpoints. */
 
-export type TenantStatus = 'TRIAL' | 'ACTIVE' | 'SUSPENDED';
+/** CLOSED: the owner deleted the account; erased on eraseOn unless restored. */
+export type TenantStatus = 'TRIAL' | 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
 export type Plan = 'TRIAL' | 'MONTHLY' | 'YEARLY';
 
 /** GET /admin/tenants (page content), GET /admin/tenants/{id} */
@@ -16,6 +17,10 @@ export interface Tenant {
   /** Set when the business registered themselves and accepted the terms. */
   termsAcceptedAt: string | null;
   createdAt: string;
+  /** When the owner deleted the account (CLOSED only). */
+  closedAt: string | null;
+  /** Date all the business's data is erased (CLOSED only). */
+  eraseOn: string | null;
 }
 
 /** GET /admin/tenants/summary */

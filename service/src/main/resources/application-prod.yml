@@ -1,0 +1,21 @@
+# Production (SPRING_PROFILES_ACTIVE=prod). Behind Nginx; secrets come from the environment.
+server:
+  # Trust X-Forwarded-* from the proxy (private addresses only) so the client IP used by the
+  # registration limit is the caller's, not Nginx's.
+  forward-headers-strategy: native
+  shutdown: graceful
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO

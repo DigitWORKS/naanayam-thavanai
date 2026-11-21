@@ -45,6 +45,9 @@ app:
     missed-installments:
       enabled: true
       cron: "0 15 0 * * *"   # 00:15 IST daily
+    tenant-erasure:
+      enabled: true
+      cron: "0 45 0 * * *"   # 00:45 IST daily: erase businesses deleted 30+ days ago
 
 management:
   endpoints:

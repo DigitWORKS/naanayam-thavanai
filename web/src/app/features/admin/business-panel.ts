@@ -65,6 +65,10 @@ export class BusinessPanel {
         : `Added by Super Admin · ${longDate(t.createdAt)}`,
       owner: `${t.ownerName} · ${formatPhone(t.phone)}`,
       suspended: t.status === 'SUSPENDED',
+      closed: t.status === 'CLOSED',
+      closedText: t.status === 'CLOSED'
+        ? `Deleted by the owner${t.closedAt ? ` on ${longDate(t.closedAt)}` : ''}. Nobody can log in. All data is erased on ${t.eraseOn ? longDate(t.eraseOn) : 'the erase date'} unless you restore it first.`
+        : '',
       current: `${t.plan ? PLAN_LABEL[t.plan] : 'No plan'}${t.planExpiry ? ` · ends ${longDate(t.planExpiry)}` : ''}`,
       expired: !!t.planExpiry && t.planExpiry < this.today,
     };
@@ -101,6 +105,22 @@ export class BusinessPanel {
       this.error.set(apiErrorMessage(e, 'Could not save.'));
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  // ------------------------------------------------------------ restore (owner deleted the account)
+
+  async restore(): Promise<void> {
+    this.statusBusy.set(true);
+    this.statusError.set('');
+    try {
+      const t = this.tenant();
+      await firstValueFrom(this.http.post(`${API}/admin/tenants/${t.id}/restore`, {}));
+      this.saved.emit(t.id);
+    } catch (e) {
+      this.statusError.set(apiErrorMessage(e, 'Could not restore.'));
+    } finally {
+      this.statusBusy.set(false);
     }
   }
 

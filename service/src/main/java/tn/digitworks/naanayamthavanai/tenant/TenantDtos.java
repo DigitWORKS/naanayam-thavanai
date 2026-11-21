@@ -27,10 +27,12 @@ public final class TenantDtos {
 
     public record TenantResponse(Long id, String name, String ownerName, String phone, String licenceNo,
                                  Tenant.Status status, Plan plan, LocalDate planExpiry,
-                                 LocalDateTime termsAcceptedAt, LocalDateTime createdAt) {
+                                 LocalDateTime termsAcceptedAt, LocalDateTime createdAt,
+                                 LocalDateTime closedAt, LocalDate eraseOn) {
         public static TenantResponse of(Tenant t) {
             return new TenantResponse(t.getId(), t.getName(), t.getOwnerName(), t.getPhone(), t.getLicenceNo(),
-                    t.getStatus(), t.getPlan(), t.getPlanExpiry(), t.getTermsAcceptedAt(), t.getCreatedAt());
+                    t.getStatus(), t.getPlan(), t.getPlanExpiry(), t.getTermsAcceptedAt(), t.getCreatedAt(),
+                    t.getClosedAt(), t.getEraseOn());
         }
     }
 

@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -34,6 +35,15 @@ public final class UserDtos {
     public record ChangePinRequest(
             @NotBlank @Pattern(regexp = PIN, message = "PIN must be 4 to 6 digits") String currentPin,
             @NotBlank @Pattern(regexp = PIN, message = "PIN must be 4 to 6 digits") String newPin) {
+    }
+
+    /** Owner confirms deleting the business account with their PIN. */
+    public record DeleteAccountRequest(
+            @NotBlank @Pattern(regexp = PIN, message = "PIN must be 4 to 6 digits") String pin) {
+    }
+
+    /** eraseOn: the date all the business's data is erased unless restored before then. */
+    public record DeleteAccountResponse(LocalDate eraseOn) {
     }
 
     /**

@@ -8,65 +8,74 @@
   <button type="button" class="close" aria-label="Close" (click)="closed.emit()">×</button>
 </div>
 
-@if (h.suspended) {
-  <p class="banner danger">Suspended: the owner and their agents cannot log in. Their data is kept.</p>
-} @else if (h.expired) {
-  <p class="banner warn">Plan ended: they cannot log in until it is renewed.</p>
-}
-
-<form class="form" novalidate (submit)="$event.preventDefault(); save()">
-  <div class="field">
-    <span class="label" id="fp-plan">Plan <span class="muted">· now {{ h.current }}</span></span>
-    <div class="seg" role="radiogroup" aria-labelledby="fp-plan">
-      @for (p of plans; track p) {
-        <button type="button" role="radio" [attr.aria-checked]="plan() === p" [class.on]="plan() === p"
-                (click)="plan.set(plan() === p ? null : p)">{{ p === 'TRIAL' ? 'Trial' : p === 'MONTHLY' ? 'Monthly' : 'Yearly' }}</button>
-      }
-    </div>
-    @if (preview()) { <span class="hint">{{ preview() }}</span> }
-    @else { <span class="hint">Pick a plan to start or renew it from today. Unused days are kept.</span> }
-  </div>
-
-  <div class="nt-field">
-    <label for="fp-exp">Expiry date (override) <span class="opt">(optional)</span></label>
-    <input id="fp-exp" type="date" [value]="expiry()" (change)="expiry.set($any($event.target).value)" />
-  </div>
-
-  <div class="nt-field">
-    <label for="fp-lic">Money-lending licence</label>
-    <input id="fp-lic" maxlength="50" autocomplete="off" placeholder="Not given yet" [value]="licence()"
-           (input)="licence.set($any($event.target).value)" />
-  </div>
-
-  @if (error()) { <p class="nt-error-text small" role="alert">{{ error() }}</p> }
-  @if (done() && !dirty()) { <p class="ok small" role="status">{{ done() }}</p> }
-  <button type="submit" class="nt-btn wide" [disabled]="!dirty() || busy()">{{ busy() ? 'Saving…' : 'Save changes' }}</button>
-</form>
-
-<div class="divider"></div>
-
-@if (h.suspended) {
-  <button type="button" class="nt-btn nt-btn--outline wide" [disabled]="statusBusy()" (click)="setSuspended(false)">
-    {{ statusBusy() ? 'Saving…' : 'Lift suspension' }}
+@if (h.closed) {
+  <p class="banner danger">{{ h.closedText }}</p>
+  <button type="button" class="nt-btn nt-btn--outline wide" [disabled]="statusBusy()" (click)="restore()">
+    {{ statusBusy() ? 'Restoring…' : 'Restore business' }}
   </button>
-  <span class="hint">They can log in again (if the plan has not ended).</span>
+  <span class="hint">Only when the owner asks. Everyone logs in again with their existing PIN.</span>
+  @if (statusError()) { <p class="nt-error-text small" role="alert">{{ statusError() }}</p> }
 } @else {
-  <button type="button" class="nt-btn nt-btn--danger-text wide" (click)="confirming.set(true)">Suspend business</button>
-  <span class="hint">Suspended businesses and their agents cannot log in. Their data is kept.</span>
-}
-@if (statusError() && !confirming()) { <p class="nt-error-text small" role="alert">{{ statusError() }}</p> }
+  @if (h.suspended) {
+    <p class="banner danger">Suspended: the owner and their agents cannot log in. Their data is kept.</p>
+  } @else if (h.expired) {
+    <p class="banner warn">Plan ended: they cannot log in until it is renewed.</p>
+  }
 
-@if (confirming()) {
-  <nt-dialog [heading]="'Suspend ' + tenant().name + '?'" [busy]="statusBusy()" (closed)="confirming.set(false)">
-    <div class="confirm">
-      <p class="banner danger">The owner and every agent are signed out on their next action and cannot log in. Their data is kept; you can lift the suspension later.</p>
-      @if (statusError()) { <p class="nt-error-text small" role="alert">{{ statusError() }}</p> }
-      <div class="actions">
-        <button type="button" class="nt-btn nt-btn--outline" [disabled]="statusBusy()" (click)="dialog()?.close()">Cancel</button>
-        <button type="button" class="nt-btn danger-btn" [disabled]="statusBusy()" (click)="setSuspended(true)">
-          {{ statusBusy() ? 'Suspending…' : 'Suspend' }}
-        </button>
+  <form class="form" novalidate (submit)="$event.preventDefault(); save()">
+    <div class="field">
+      <span class="label" id="fp-plan">Plan <span class="muted">· now {{ h.current }}</span></span>
+      <div class="seg" role="radiogroup" aria-labelledby="fp-plan">
+        @for (p of plans; track p) {
+          <button type="button" role="radio" [attr.aria-checked]="plan() === p" [class.on]="plan() === p"
+                  (click)="plan.set(plan() === p ? null : p)">{{ p === 'TRIAL' ? 'Trial' : p === 'MONTHLY' ? 'Monthly' : 'Yearly' }}</button>
+        }
       </div>
+      @if (preview()) { <span class="hint">{{ preview() }}</span> }
+      @else { <span class="hint">Pick a plan to start or renew it from today. Unused days are kept.</span> }
     </div>
-  </nt-dialog>
+
+    <div class="nt-field">
+      <label for="fp-exp">Expiry date (override) <span class="opt">(optional)</span></label>
+      <input id="fp-exp" type="date" [value]="expiry()" (change)="expiry.set($any($event.target).value)" />
+    </div>
+
+    <div class="nt-field">
+      <label for="fp-lic">Money-lending licence</label>
+      <input id="fp-lic" maxlength="50" autocomplete="off" placeholder="Not given yet" [value]="licence()"
+             (input)="licence.set($any($event.target).value)" />
+    </div>
+
+    @if (error()) { <p class="nt-error-text small" role="alert">{{ error() }}</p> }
+    @if (done() && !dirty()) { <p class="ok small" role="status">{{ done() }}</p> }
+    <button type="submit" class="nt-btn wide" [disabled]="!dirty() || busy()">{{ busy() ? 'Saving…' : 'Save changes' }}</button>
+  </form>
+
+  <div class="divider"></div>
+
+  @if (h.suspended) {
+    <button type="button" class="nt-btn nt-btn--outline wide" [disabled]="statusBusy()" (click)="setSuspended(false)">
+      {{ statusBusy() ? 'Saving…' : 'Lift suspension' }}
+    </button>
+    <span class="hint">They can log in again (if the plan has not ended).</span>
+  } @else {
+    <button type="button" class="nt-btn nt-btn--danger-text wide" (click)="confirming.set(true)">Suspend business</button>
+    <span class="hint">Suspended businesses and their agents cannot log in. Their data is kept.</span>
+  }
+  @if (statusError() && !confirming()) { <p class="nt-error-text small" role="alert">{{ statusError() }}</p> }
+
+  @if (confirming()) {
+    <nt-dialog [heading]="'Suspend ' + tenant().name + '?'" [busy]="statusBusy()" (closed)="confirming.set(false)">
+      <div class="confirm">
+        <p class="banner danger">The owner and every agent are signed out on their next action and cannot log in. Their data is kept; you can lift the suspension later.</p>
+        @if (statusError()) { <p class="nt-error-text small" role="alert">{{ statusError() }}</p> }
+        <div class="actions">
+          <button type="button" class="nt-btn nt-btn--outline" [disabled]="statusBusy()" (click)="dialog()?.close()">Cancel</button>
+          <button type="button" class="nt-btn danger-btn" [disabled]="statusBusy()" (click)="setSuspended(true)">
+            {{ statusBusy() ? 'Suspending…' : 'Suspend' }}
+          </button>
+        </div>
+      </div>
+    </nt-dialog>
+  }
 }

@@ -7,7 +7,7 @@ Last updated: 2026-11-14
 ### Build order
 | # | Step | Status |
 |---|---|---|
-| 1 | API spec + DB schema | ✅ Done (spec 54 operations, migrations V1–V10) |
+| 1 | API spec + DB schema | ✅ Done (spec 56 operations, migrations V1–V11) |
 | 2 | Backend core logic (schedule, allocation, missed days, pre-closure) | ✅ Done, unit tested |
 | 3 | Backend: entities, repositories, services, controllers | ✅ Done |
 | 4 | First run on local MySQL | ✅ Done 2026-11-14: Flyway V1–V6 applied, Hibernate validation passed, Super Admin created |
@@ -338,6 +338,14 @@ API clients generated from `api-spec/openapi.yaml`:
       refresh), record payment (cash / UPI + 12-digit UTR, quick amounts, idempotent `clientTxnId`, form locks
       after an unknown outcome). Money as integer paise. Owners currently land on the same Today list.
 - [x] Swagger UI "Authorize" (bearer JWT) via `common/OpenApiConfig.java`.
+- [~] Account deletion written (to verify; Play Data safety requirement). Owner: mobile More → "Delete business
+      account" (what is deleted, tick, PIN, confirm) → POST /auth/delete-account: business CLOSED at once, every
+      login signed out (token versions), login gives 403 TENANT_CLOSED with the erase date. Nightly 00:45
+      TenantErasureService erases all rows of the business 30 days later (V11 closed_at / erase_on) plus its
+      document files; TenantErasureTablesTest fails if a migration adds a table the erasure misses. Super Admin:
+      "Deleted" filter + tag, Restore button (POST /admin/tenants/{id}/restore); a CLOSED business cannot be
+      patched. Agents: "ask your business owner" under More. Public web page /delete-account (steps, support
+      email, timeline) is the Play "delete account URL". TODO: real address in web/src/app/core/support.ts.
 - [~] Flutter slice 9 written (to verify): Change PIN under More (owner and agent) — current PIN, new PIN twice,
       4–6 digits; WRONG_PIN / SAME_PIN / TOO_MANY_ATTEMPTS shown on the right box; new tokens saved so this
       phone stays signed in and other phones are signed out. More also shows "N payments saved by another
@@ -401,5 +409,9 @@ API clients generated from `api-spec/openapi.yaml`:
 ### Legal, product, infra
 - [ ] Draft privacy policy and terms of service (consent wording, "software provider only" clause);
       lawyer review; privacy policy URL is required for the Play Store.
-- [ ] Deployment, daily MySQL backups (`mysqldump` + binary logs), CI.
+- [~] Deployment written (to verify on EC2): `deploy/` — Docker Compose (MySQL 8.4, API with `prod` profile,
+      Nginx serving the web build and proxying /v1), `.env.example`, `backup.sh` (daily DB dump + documents,
+      14 days, optional S3), systemd unit as the non-Docker route, README with EC2 steps. `application-prod.yml`:
+      forwarded headers (real client IP for the registration limit), Swagger off. HTTPS waits for a domain.
+- [ ] CI.
 - [ ] `git init` and first commit (not done yet).

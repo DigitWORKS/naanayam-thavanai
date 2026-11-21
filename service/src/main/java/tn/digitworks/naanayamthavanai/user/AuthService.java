@@ -104,12 +104,33 @@ public class AuthService {
         return userService.toResponse(user);
     }
 
+    /**
+     * Owner deletes the business account after re-entering the PIN: the business closes at once, every login of
+     * it is signed out, and all its data is erased {@value Tenant#ERASE_AFTER_DAYS} days later (TenantErasureService).
+     */
+    @Transactional
+    public UserDtos.DeleteAccountResponse deleteAccount(String pin) {
+        AppUser owner = users.findById(CurrentUser.get().userId()).orElseThrow(() -> ApiException.notFound("User"));
+        if (!passwordEncoder.matches(pin, owner.getPinHash())) {
+            throw ApiException.rule("WRONG_PIN", "PIN is incorrect");
+        }
+        Tenant tenant = tenants.findById(owner.getTenantId()).orElseThrow(() -> ApiException.notFound("Tenant"));
+        tenant.close(LocalDateTime.now(clock));
+        users.findByTenantIdOrderByName(tenant.getId()).forEach(AppUser::revokeTokens);
+        return new UserDtos.DeleteAccountResponse(tenant.getEraseOn());
+    }
+
     private void checkCanSignIn(AppUser user) {
         if (!user.isActive()) {
             throw ApiException.forbidden("This account is deactivated");
         }
         if (user.getTenantId() != null) {
             Tenant tenant = tenants.findById(user.getTenantId()).orElseThrow(() -> ApiException.notFound("Tenant"));
+            if (tenant.getStatus() == Tenant.Status.CLOSED) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "TENANT_CLOSED",
+                        "This business account was deleted. Its data is erased on " + tenant.getEraseOn()
+                                + "; contact support before then to restore it.");
+            }
             if (!tenant.isUsable(LocalDate.now(clock))) {
                 throw new ApiException(HttpStatus.FORBIDDEN, "TENANT_INACTIVE",
                         "This business account is suspended or its plan has ended");

@@ -1,0 +1,72 @@
+# Naanayam on one VM: MySQL + API + Nginx (web). Run from this folder:
+#   docker compose up -d --build
+# Secrets come from deploy/.env (copy .env.example). Only port 80 (later 443) is published.
+name: naanayam
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "5" }
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: naanayam
+      MYSQL_USER: naanayam
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
+      TZ: Asia/Kolkata
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+05:30
+      - --innodb-buffer-pool-size=256M
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      # Exit 0 whenever the server answers, even "access denied", so no password is needed here.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    logging: *logging
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/service.Dockerfile
+    image: naanayam-api
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DB_URL: jdbc:mysql://db:3306/naanayam?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Kolkata
+      DB_USER: naanayam
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (at least 32 characters)}
+      SUPER_ADMIN_PHONE: ${SUPER_ADMIN_PHONE:-}
+      SUPER_ADMIN_PIN: ${SUPER_ADMIN_PIN:-}
+      DOCUMENT_DIR: /data/documents
+    volumes:
+      - documents:/data/documents
+    logging: *logging
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+    image: naanayam-web
+    restart: unless-stopped
+    depends_on: [api]
+    ports:
+      - "80:80"
+    volumes:
+      - certbot-www:/var/www/certbot:ro
+    logging: *logging
+
+volumes:
+  db-data:
+  documents:
+  certbot-www:

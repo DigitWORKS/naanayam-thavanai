@@ -10,4 +10,7 @@ public interface DocumentStorage {
     String store(long tenantId, long clientId, MultipartFile file);
 
     Resource load(String key);
+
+    /** Removes every file of a tenant (account erasure). Missing files are not an error. */
+    void deleteTenant(long tenantId);
 }

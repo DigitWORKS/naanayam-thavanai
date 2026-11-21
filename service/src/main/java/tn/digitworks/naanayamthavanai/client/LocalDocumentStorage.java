@@ -13,8 +13,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 /** Stores files under app.storage.local-dir/{tenantId}/{clientId}/{uuid}.{ext}. */
 @Component
@@ -59,6 +61,22 @@ public class LocalDocumentStorage implements DocumentStorage {
             throw ApiException.notFound("Document file");
         }
         return new FileSystemResource(path);
+    }
+
+    @Override
+    public void deleteTenant(long tenantId) {
+        Path dir = resolve(Long.toString(tenantId));
+        if (!Files.exists(dir)) {
+            return;
+        }
+        try (Stream<Path> walk = Files.walk(dir)) {
+            // Deepest first, so directories are empty when removed.
+            for (Path p : walk.sorted(Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(p);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not delete documents of tenant " + tenantId, e);
+        }
     }
 
     private Path resolve(String key) {

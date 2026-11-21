@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/api_client.dart';
 import '../../core/api_error.dart';
@@ -78,6 +79,19 @@ class AuthController extends Notifier<AuthState> {
           refreshToken: tokens.refreshToken,
           userJson: tokens.userJson,
         );
+  }
+
+  /// Owner deletes the business account. The server closes it, signs everyone out and erases the data on
+  /// the returned date; this phone signs out with a notice on the login screen.
+  Future<void> deleteAccount(String pin) async {
+    final dio = ref.read(apiClientProvider);
+    final eraseOn = await ApiError.guard(() async {
+      final res = await dio.post<Map<String, dynamic>>('/auth/delete-account', data: {'pin': pin});
+      return DateFormat('d MMM yyyy').format(DateTime.parse(res.data!['eraseOn'] as String));
+    });
+    await ref.read(tokenStoreProvider).clear();
+    state = SignedOut('Your business account is deleted. All its data will be erased on $eraseOn. '
+        'To undo, contact DigitWORKS support before then.');
   }
 
   Future<void> _signIn(TokenResponse tokens) async {

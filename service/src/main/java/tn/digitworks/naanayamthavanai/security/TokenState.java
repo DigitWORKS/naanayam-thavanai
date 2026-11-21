@@ -52,7 +52,7 @@ public class TokenState implements OAuth2TokenValidator<Jwt> {
 
     /** Same rule as Tenant.isUsable; no tenant (SUPER_ADMIN) is always usable. */
     static boolean tenantUsable(Tenant.Status status, LocalDate planExpiry, LocalDate today) {
-        return status != Tenant.Status.SUSPENDED && (planExpiry == null || !planExpiry.isBefore(today));
+        return status == null || Tenant.usable(status, planExpiry, today);   // null: Super Admin, no tenant
     }
 
     /** Token usable: user active and its version is the current one. */

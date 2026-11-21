@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_models.dart';
 import '../auth/change_pin_screen.dart';
+import '../auth/delete_account_screen.dart';
 import '../sync/payment_queue.dart';
 
 /// Signed-in user, change PIN and log out. The "More" tab for agents and owners.
@@ -122,6 +123,19 @@ class AccountScreen extends ConsumerWidget {
             icon: const Icon(Icons.logout),
             label: const Text('Log out'),
           ),
+          if (user.isOwner) ...[
+            const SizedBox(height: 8),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: AppColors.error),
+              onPressed: () =>
+                  Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const DeleteAccountScreen())),
+              child: const Text('Delete business account'),
+            ),
+          ] else ...[
+            const SizedBox(height: 16),
+            const Text('To remove your login, ask your business owner.',
+                textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: AppColors.muted)),
+          ],
         ],
       ),
     );

@@ -60,4 +60,10 @@ public class TenantAdminController {
     public TenantResponse update(@PathVariable long tenantId, @Valid @RequestBody TenantUpdate in) {
         return service.update(tenantId, in);
     }
+
+    /** Undoes the owner's delete request before the erase date. */
+    @PostMapping("/{tenantId}/restore")
+    public TenantResponse restore(@PathVariable long tenantId) {
+        return service.restore(tenantId);
+    }
 }

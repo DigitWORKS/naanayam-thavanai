@@ -1,0 +1,21 @@
+# Alternative to Docker: run the jar directly (MySQL and Nginx installed on the host).
+#   sudo cp naanayam.service /etc/systemd/system/ && sudo systemctl enable --now naanayam
+# /etc/naanayam/naanayam.env holds DB_URL, DB_USER, DB_PASSWORD, JWT_SECRET, DOCUMENT_DIR (chmod 600).
+[Unit]
+Description=Naanayam Thavanai API
+After=network-online.target mysql.service
+Wants=network-online.target
+
+[Service]
+User=naanayam
+WorkingDirectory=/opt/naanayam
+EnvironmentFile=/etc/naanayam/naanayam.env
+Environment=SPRING_PROFILES_ACTIVE=prod
+Environment=JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=60 -Duser.timezone=Asia/Kolkata
+ExecStart=/usr/bin/java -jar /opt/naanayam/app.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
